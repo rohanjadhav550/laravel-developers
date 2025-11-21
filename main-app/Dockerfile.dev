@@ -1,0 +1,56 @@
+# Development Dockerfile with hot-reload support
+FROM php:8.2-cli-alpine
+
+# Install system dependencies
+RUN apk add --no-cache \
+    curl \
+    git \
+    libpng-dev \
+    libxml2-dev \
+    libzip-dev \
+    oniguruma-dev \
+    mysql-client \
+    unzip \
+    zip \
+    nodejs \
+    npm
+
+# Install PHP extensions (ctype, dom, fileinfo, mbstring, tokenizer, xml are already included)
+RUN docker-php-ext-install \
+    bcmath \
+    gd \
+    pdo \
+    pdo_mysql \
+    zip
+
+# Install Composer
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+
+WORKDIR /var/www/html
+
+# Copy composer files
+COPY composer.json composer.lock ./
+
+# Install PHP dependencies (including dev)
+RUN composer install --no-scripts --no-autoloader --prefer-dist
+
+# Copy package files
+COPY package.json package-lock.json* ./
+
+# Install Node dependencies
+RUN npm ci
+
+# Copy application code
+COPY . .
+
+# Generate autoloader
+RUN composer dump-autoload
+
+# Set permissions
+RUN chmod -R 775 storage bootstrap/cache
+
+# Expose ports for PHP dev server and Vite
+EXPOSE 8000 5173
+
+# Start development servers
+CMD ["sh", "-c", "php artisan serve --host=0.0.0.0 --port=8000 & npm run dev -- --host 0.0.0.0"]
