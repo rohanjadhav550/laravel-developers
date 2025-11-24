@@ -27,6 +27,8 @@ export interface SharedData {
     quote: { message: string; author: string };
     auth: Auth;
     sidebarOpen: boolean;
+    currentProject?: Project;
+    userProjects?: Project[];
     [key: string]: unknown;
 }
 
@@ -40,4 +42,18 @@ export interface User {
     created_at: string;
     updated_at: string;
     [key: string]: unknown; // This allows for additional properties...
+}
+
+export interface Project {
+    id: number;
+    name: string;
+    slug: string;
+    owner_id: number;
+    owner?: User;
+    users_count?: number;
+    created_at: string;
+    updated_at: string;
+    pivot?: {
+        role: string;
+    };
 }

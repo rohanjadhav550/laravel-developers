@@ -2,8 +2,11 @@
 
 namespace App\Actions\Fortify;
 
+use App\Models\Project;
 use App\Models\User;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Laravel\Fortify\Contracts\CreatesNewUsers;
 
@@ -30,10 +33,32 @@ class CreateNewUser implements CreatesNewUsers
             'password' => $this->passwordRules(),
         ])->validate();
 
-        return User::create([
-            'name' => $input['name'],
-            'email' => $input['email'],
-            'password' => $input['password'],
+        return DB::transaction(function () use ($input) {
+            $user = User::create([
+                'name' => $input['name'],
+                'email' => $input['email'],
+                'password' => $input['password'],
+            ]);
+
+            $this->createDefaultProject($user);
+
+            return $user;
+        });
+    }
+
+    /**
+     * Create a default project for the newly registered user.
+     */
+    protected function createDefaultProject(User $user): Project
+    {
+        $project = Project::create([
+            'name' => $user->name . "'s Project",
+            'slug' => Str::slug($user->name) . '-' . Str::random(6),
+            'owner_id' => $user->id,
         ]);
+
+        $project->users()->attach($user->id, ['role' => 'owner']);
+
+        return $project;
     }
 }

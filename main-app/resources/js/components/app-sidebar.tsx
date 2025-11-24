@@ -1,6 +1,7 @@
 import { NavFooter } from '@/components/nav-footer';
 import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
+import { ProjectSwitcher } from '@/components/project-switcher';
 import {
     Sidebar,
     SidebarContent,
@@ -10,19 +11,10 @@ import {
     SidebarMenuButton,
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
-import { dashboard } from '@/routes';
-import { type NavItem } from '@/types';
-import { Link } from '@inertiajs/react';
-import { BookOpen, Folder, LayoutGrid } from 'lucide-react';
+import { type NavItem, type SharedData } from '@/types';
+import { Link, usePage } from '@inertiajs/react';
+import { BookOpen, Folder, Home, LayoutGrid } from 'lucide-react';
 import AppLogo from './app-logo';
-
-const mainNavItems: NavItem[] = [
-    {
-        title: 'Dashboard',
-        href: dashboard(),
-        icon: LayoutGrid,
-    },
-];
 
 const footerNavItems: NavItem[] = [
     {
@@ -38,18 +30,42 @@ const footerNavItems: NavItem[] = [
 ];
 
 export function AppSidebar() {
+    const { currentProject } = usePage<SharedData>().props;
+
+    const mainNavItems: NavItem[] = currentProject
+        ? [
+              {
+                  title: 'Home',
+                  href: `/projects/${currentProject.slug}/home`,
+                  icon: Home,
+              },
+              {
+                  title: 'Dashboard',
+                  href: `/projects/${currentProject.slug}/dashboard`,
+                  icon: LayoutGrid,
+              },
+          ]
+        : [
+              {
+                  title: 'Projects',
+                  href: '/projects',
+                  icon: Folder,
+              },
+          ];
+
     return (
         <Sidebar collapsible="icon" variant="inset">
             <SidebarHeader>
                 <SidebarMenu>
                     <SidebarMenuItem>
                         <SidebarMenuButton size="lg" asChild>
-                            <Link href={dashboard()} prefetch>
+                            <Link href="/projects" prefetch>
                                 <AppLogo />
                             </Link>
                         </SidebarMenuButton>
                     </SidebarMenuItem>
                 </SidebarMenu>
+                {currentProject && <ProjectSwitcher />}
             </SidebarHeader>
 
             <SidebarContent>

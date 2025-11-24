@@ -38,6 +38,9 @@ class HandleInertiaRequests extends Middleware
     {
         [$message, $author] = str(Inspiring::quotes()->random())->explode('-');
 
+        $currentProject = $request->attributes->get('current_project');
+        $userProjects = $request->user()?->projects()->orderBy('name')->get();
+
         return [
             ...parent::share($request),
             'name' => config('app.name'),
@@ -46,6 +49,8 @@ class HandleInertiaRequests extends Middleware
                 'user' => $request->user(),
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
+            'currentProject' => $currentProject,
+            'userProjects' => $userProjects,
         ];
     }
 }
