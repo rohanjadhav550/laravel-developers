@@ -64,6 +64,8 @@ services:
       - DB_DATABASE=laravel
       - DB_USERNAME=laravel
       - DB_PASSWORD=secret
+      - DB_SSL_MODE=DISABLED
+      - VITE_DEV_SERVER_URL=http://localhost:5173
     depends_on:
       mysql:
         condition: service_healthy

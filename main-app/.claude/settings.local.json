@@ -3,7 +3,9 @@
     "allow": [
       "mcp__laravel-boost__application-info",
       "mcp__laravel-boost__list-routes",
-      "Bash(php artisan make:model:*)"
+      "Bash(php artisan make:model:*)",
+      "Bash(docker logs:*)",
+      "Bash(curl:*)"
     ]
   },
   "enableAllProjectMcpServers": true,
