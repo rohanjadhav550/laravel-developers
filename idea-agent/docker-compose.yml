@@ -1,0 +1,18 @@
+services:
+  idea-agent:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: idea-agent
+    ports:
+      - "8001:8000"
+    volumes:
+      - .:/app
+    networks:
+      - laravel-microservices
+    restart: unless-stopped
+
+networks:
+  laravel-microservices:
+    external: true
+    name: laravel-microservices

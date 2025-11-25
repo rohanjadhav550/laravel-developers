@@ -21,6 +21,8 @@ services:
     depends_on:
       mysql:
         condition: service_healthy
+    networks:
+      - laravel-microservices
     restart: unless-stopped
 
   mysql:
@@ -36,10 +38,12 @@ services:
     volumes:
       - mysql-data:/var/lib/mysql
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost" ]
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - laravel-microservices
     restart: unless-stopped
 
   # Development service with hot-reload
@@ -69,9 +73,17 @@ services:
     depends_on:
       mysql:
         condition: service_healthy
+    networks:
+      - laravel-microservices
     profiles:
       - dev
     restart: unless-stopped
 
 volumes:
   mysql-data:
+
+
+networks:
+  laravel-microservices:
+    driver: bridge
+    name: laravel-microservices
