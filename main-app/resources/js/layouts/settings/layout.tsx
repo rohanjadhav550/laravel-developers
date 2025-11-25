@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { cn, isSameUrl, resolveUrl } from '@/lib/utils';
 import { type NavItem } from '@/types';
-import { Link } from '@inertiajs/react';
+import { Link, usePage } from '@inertiajs/react';
 import { type PropsWithChildren } from 'react';
 
 const sidebarNavItems: NavItem[] = [
@@ -18,6 +18,11 @@ const sidebarNavItems: NavItem[] = [
         icon: null,
     },
     {
+        title: 'AI',
+        href: '/settings/ai',
+        icon: null,
+    },
+    {
         title: 'Appearance',
         href: '/settings/appearance',
         icon: null,
@@ -25,12 +30,8 @@ const sidebarNavItems: NavItem[] = [
 ];
 
 export default function SettingsLayout({ children }: PropsWithChildren) {
-    // When server-side rendering, we only render the layout on the client...
-    if (typeof window === 'undefined') {
-        return null;
-    }
-
-    const currentPath = window.location.pathname;
+    const { url } = usePage();
+    const currentPath = url;
 
     return (
         <div className="px-4 py-6">

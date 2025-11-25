@@ -17,14 +17,26 @@ class ProjectController extends Controller
      */
     public function index(Request $request): Response
     {
+        $perPage = $request->integer('per_page', 10);
+        $search = $request->string('search', '');
+
         $projects = $request->user()
             ->projects()
             ->withCount('users')
+            ->when($search, function ($query, $search) {
+                $query->where('name', 'like', "%{$search}%")
+                    ->orWhere('slug', 'like', "%{$search}%");
+            })
             ->orderBy('name')
-            ->get();
+            ->paginate($perPage)
+            ->withQueryString();
 
         return Inertia::render('projects/index', [
             'projects' => $projects,
+            'filters' => [
+                'search' => $search,
+                'per_page' => $perPage,
+            ],
         ]);
     }
 

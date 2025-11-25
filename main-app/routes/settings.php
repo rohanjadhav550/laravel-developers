@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Settings\AiController;
 use App\Http\Controllers\Settings\PasswordController;
 use App\Http\Controllers\Settings\ProfileController;
 use Illuminate\Support\Facades\Route;
@@ -17,6 +18,9 @@ Route::middleware('auth')->group(function () {
     Route::put('settings/password', [PasswordController::class, 'update'])
         ->middleware('throttle:6,1')
         ->name('user-password.update');
+
+    Route::get('settings/ai', [AiController::class, 'edit'])->name('ai.edit');
+    Route::patch('settings/ai', [AiController::class, 'update'])->name('ai.update');
 
     Route::get('settings/appearance', function () {
         return Inertia::render('settings/appearance');
