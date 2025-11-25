@@ -50,6 +50,10 @@ Route::middleware(['auth'])->group(function () {
                     'project' => $project,
                 ]);
             })->name('projects.solutions');
+
+            // Chat file upload
+            Route::post('chat/upload', [\App\Http\Controllers\ChatFileController::class, 'upload'])->name('chat.file.upload');
+            Route::get('chat/files/{filename}', [\App\Http\Controllers\ChatFileController::class, 'download'])->name('chat.file.download');
         });
 });
 
