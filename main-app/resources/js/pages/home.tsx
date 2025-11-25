@@ -1,8 +1,9 @@
 import { PlaceholderPattern } from '@/components/ui/placeholder-pattern';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem, type Project } from '@/types';
-import { Head } from '@inertiajs/react';
-import { FolderOpen, Users } from 'lucide-react';
+import { Head, Link } from '@inertiajs/react';
+import { FolderOpen, Users, MessageSquare, History, Lightbulb, ArrowRight } from 'lucide-react';
 
 interface HomeProps {
     project: Project;
@@ -26,6 +27,7 @@ export default function Home({ project, membersCount }: HomeProps) {
                     <p className="text-muted-foreground">Project dashboard</p>
                 </div>
 
+                {/* Project Stats */}
                 <div className="grid gap-4 md:grid-cols-3">
                     <div className="rounded-xl border bg-card p-6">
                         <div className="flex items-center gap-4">
@@ -56,8 +58,73 @@ export default function Home({ project, membersCount }: HomeProps) {
                     </div>
                 </div>
 
-                <div className="relative min-h-[50vh] flex-1 overflow-hidden rounded-xl border border-sidebar-border/70 md:min-h-min dark:border-sidebar-border">
-                    <PlaceholderPattern className="absolute inset-0 size-full stroke-neutral-900/20 dark:stroke-neutral-100/20" />
+                {/* Main Actions */}
+                <div className="mt-6">
+                    <h2 className="mb-4 text-xl font-semibold">What would you like to do?</h2>
+                    <div className="grid gap-4 md:grid-cols-3">
+                        {/* Tell me your Idea */}
+                        <Link href={`/projects/${project.slug}/chat`}>
+                            <Card className="group cursor-pointer transition-all hover:shadow-lg hover:border-primary/50">
+                                <CardHeader>
+                                    <div className="mb-3 flex items-center justify-between">
+                                        <div className="rounded-full bg-gradient-to-r from-purple-500 to-blue-500 p-3">
+                                            <MessageSquare className="h-6 w-6 text-white" />
+                                        </div>
+                                        <ArrowRight className="h-5 w-5 text-muted-foreground transition-transform group-hover:translate-x-1" />
+                                    </div>
+                                    <CardTitle>Tell me your Idea</CardTitle>
+                                    <CardDescription>
+                                        Chat with AI to develop your ideas and get instant help with your project
+                                    </CardDescription>
+                                </CardHeader>
+                                <CardContent>
+                                    <div className="text-sm text-primary">Start chatting →</div>
+                                </CardContent>
+                            </Card>
+                        </Link>
+
+                        {/* Previous Conversations */}
+                        <Link href={`/projects/${project.slug}/conversations`}>
+                            <Card className="group cursor-pointer transition-all hover:shadow-lg hover:border-primary/50">
+                                <CardHeader>
+                                    <div className="mb-3 flex items-center justify-between">
+                                        <div className="rounded-full bg-gradient-to-r from-blue-500 to-cyan-500 p-3">
+                                            <History className="h-6 w-6 text-white" />
+                                        </div>
+                                        <ArrowRight className="h-5 w-5 text-muted-foreground transition-transform group-hover:translate-x-1" />
+                                    </div>
+                                    <CardTitle>Previous Conversations</CardTitle>
+                                    <CardDescription>
+                                        Review and continue your past chat conversations and discussions
+                                    </CardDescription>
+                                </CardHeader>
+                                <CardContent>
+                                    <div className="text-sm text-primary">View conversations →</div>
+                                </CardContent>
+                            </Card>
+                        </Link>
+
+                        {/* Solutions */}
+                        <Link href={`/projects/${project.slug}/solutions`}>
+                            <Card className="group cursor-pointer transition-all hover:shadow-lg hover:border-primary/50">
+                                <CardHeader>
+                                    <div className="mb-3 flex items-center justify-between">
+                                        <div className="rounded-full bg-gradient-to-r from-green-500 to-emerald-500 p-3">
+                                            <Lightbulb className="h-6 w-6 text-white" />
+                                        </div>
+                                        <ArrowRight className="h-5 w-5 text-muted-foreground transition-transform group-hover:translate-x-1" />
+                                    </div>
+                                    <CardTitle>Solutions</CardTitle>
+                                    <CardDescription>
+                                        Browse accepted solutions and implementations for your project
+                                    </CardDescription>
+                                </CardHeader>
+                                <CardContent>
+                                    <div className="text-sm text-primary">View solutions →</div>
+                                </CardContent>
+                            </Card>
+                        </Link>
+                    </div>
                 </div>
             </div>
         </AppLayout>

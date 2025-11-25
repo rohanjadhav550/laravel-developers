@@ -28,6 +28,28 @@ Route::middleware(['auth'])->group(function () {
             Route::get('dashboard', function () {
                 return Inertia::render('dashboard');
             })->name('projects.dashboard');
+
+            // Chat and AI features
+            Route::get('chat', function () {
+                $project = request()->route('project');
+                return Inertia::render('chat/index', [
+                    'project' => $project,
+                ]);
+            })->name('projects.chat');
+
+            Route::get('conversations', function () {
+                $project = request()->route('project');
+                return Inertia::render('conversations/index', [
+                    'project' => $project,
+                ]);
+            })->name('projects.conversations');
+
+            Route::get('solutions', function () {
+                $project = request()->route('project');
+                return Inertia::render('solutions/index', [
+                    'project' => $project,
+                ]);
+            })->name('projects.solutions');
         });
 });
 
