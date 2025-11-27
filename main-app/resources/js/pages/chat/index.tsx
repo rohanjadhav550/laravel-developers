@@ -150,17 +150,50 @@ export default function Chat({ project }: ChatProps) {
         setAttachedFiles([]);
         setIsTyping(true);
 
-        // Simulate AI response (replace with actual API call later)
-        setTimeout(() => {
-            const aiMessage: Message = {
+        // Call AI agent via Laravel API
+        try {
+            const response = await fetch(`/projects/${project.slug}/chat/ask`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content || '',
+                },
+                body: JSON.stringify({
+                    question: userMessage.content,
+                }),
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                const aiMessage: Message = {
+                    id: (Date.now() + 1).toString(),
+                    role: 'assistant',
+                    content: data.response,
+                    timestamp: new Date(),
+                };
+                setMessages((prev) => [...prev, aiMessage]);
+            } else {
+                const errorMessage: Message = {
+                    id: (Date.now() + 1).toString(),
+                    role: 'assistant',
+                    content: 'Sorry, I encountered an error processing your request. Please try again.',
+                    timestamp: new Date(),
+                };
+                setMessages((prev) => [...prev, errorMessage]);
+            }
+        } catch (error) {
+            console.error('Chat error:', error);
+            const errorMessage: Message = {
                 id: (Date.now() + 1).toString(),
                 role: 'assistant',
-                content: `I understand you want to: "${userMessage.content}". This is a placeholder response. In the future, this will be connected to an AI agent to help you develop your idea.`,
+                content: 'Sorry, I could not connect to the AI agent. Please make sure the service is running.',
                 timestamp: new Date(),
             };
-            setMessages((prev) => [...prev, aiMessage]);
+            setMessages((prev) => [...prev, errorMessage]);
+        } finally {
             setIsTyping(false);
-        }, 1500);
+        }
     };
 
     const handleRevertToMessage = (messageId: string) => {

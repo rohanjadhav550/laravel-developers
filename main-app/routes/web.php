@@ -54,6 +54,9 @@ Route::middleware(['auth'])->group(function () {
             // Chat file upload
             Route::post('chat/upload', [\App\Http\Controllers\ChatFileController::class, 'upload'])->name('chat.file.upload');
             Route::get('chat/files/{filename}', [\App\Http\Controllers\ChatFileController::class, 'download'])->name('chat.file.download');
+            
+            // Chat AI agent
+            Route::post('chat/ask', [\App\Http\Controllers\ChatController::class, 'askAgent'])->name('chat.ask');
         });
 });
 

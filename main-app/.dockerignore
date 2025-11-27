@@ -7,7 +7,7 @@
 Dockerfile
 docker-compose.yml
 .dockerignore
-docker/
+
 
 # Dependencies (will be installed in container)
 vendor/
