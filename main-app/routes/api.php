@@ -1,11 +1,15 @@
 <?php
 
 use App\Http\Controllers\Api\AiSettingsApiController;
+use App\Http\Controllers\Api\ConversationController;
 use App\Http\Controllers\ChatFileController;
 use Illuminate\Support\Facades\Route;
 
 // Internal API for microservices (unauthenticated)
 Route::get('internal/ai-settings', [AiSettingsApiController::class, 'getSettings']);
+Route::post('internal/conversations', [ConversationController::class, 'store']);
+Route::get('internal/conversations', [ConversationController::class, 'index']);
+Route::get('internal/conversations/{threadId}', [ConversationController::class, 'show']);
 
 Route::middleware(['auth', 'project'])->group(function () {
     Route::prefix('projects/{project}')->group(function () {

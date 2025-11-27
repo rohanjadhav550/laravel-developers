@@ -44,7 +44,7 @@ def get_api_key_from_laravel(user_id):
                 print(f"Calling Laravel API (attempt {attempt + 1}/{max_retries})...")
                 response = requests.get(
                     f"{laravel_url}/api/internal/ai-settings",
-                    json={"user_id": user_id},
+                    params={"user_id": user_id},
                     timeout=timeouts[attempt]
                 )
 
@@ -97,3 +97,40 @@ def get_llm_config(user_id=2):
 
     print(f"WARNING: No AI configuration found for user {user_id}. Please configure AI settings at http://localhost:8000/settings/ai")
     return None
+
+def save_conversation_metadata(user_id, thread_id, title=None, message_count=None, project_id=None):
+    """
+    Save or update conversation metadata in Laravel's MySQL database.
+    The actual conversation messages are stored in Redis via LangGraph's RedisSaver.
+    """
+    try:
+        laravel_url = os.getenv("LARAVEL_API_URL", "http://laravel-app-dev:8000")
+
+        payload = {
+            'user_id': user_id,
+            'thread_id': thread_id,
+        }
+
+        if title:
+            payload['title'] = title
+        if message_count is not None:
+            payload['message_count'] = message_count
+        if project_id:
+            payload['project_id'] = project_id
+
+        response = requests.post(
+            f"{laravel_url}/api/internal/conversations",
+            json=payload,
+            timeout=5
+        )
+
+        if response.status_code == 200:
+            print(f"Conversation metadata saved: {thread_id}")
+            return response.json().get('data')
+        else:
+            print(f"Failed to save conversation metadata: {response.status_code}")
+            return None
+
+    except Exception as e:
+        print(f"Error saving conversation metadata: {e}")
+        return None

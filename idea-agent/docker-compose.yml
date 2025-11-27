@@ -22,7 +22,7 @@ services:
       - LARAVEL_API_URL=http://laravel-app-dev:8000
 
   redis:
-    image: redis:alpine
+    image: redis/redis-stack:latest
     container_name: redis-vector-db
     ports:
       - "6379:6379"

@@ -7,5 +7,6 @@ langgraph
 langchain-openai
 langchain-anthropic
 redis
+langgraph-checkpoint-redis
 mysql-connector-python
 python-dotenv
