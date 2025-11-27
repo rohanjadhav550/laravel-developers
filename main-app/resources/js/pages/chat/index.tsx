@@ -177,7 +177,7 @@ export default function Chat({ project }: ChatProps) {
                 const errorMessage: Message = {
                     id: (Date.now() + 1).toString(),
                     role: 'assistant',
-                    content: 'Sorry, I encountered an error processing your request. Please try again.',
+                    content: data.error || 'Sorry, I encountered an error processing your request. Please try again.',
                     timestamp: new Date(),
                 };
                 setMessages((prev) => [...prev, errorMessage]);

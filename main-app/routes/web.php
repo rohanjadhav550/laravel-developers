@@ -30,8 +30,7 @@ Route::middleware(['auth'])->group(function () {
             })->name('projects.dashboard');
 
             // Chat and AI features
-            Route::get('chat', function () {
-                $project = request()->route('project');
+            Route::get('chat', function (\App\Models\Project $project) {
                 return Inertia::render('chat/index', [
                     'project' => $project,
                 ]);

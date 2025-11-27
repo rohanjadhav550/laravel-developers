@@ -1,2 +1,11 @@
 fastapi
 uvicorn
+requests
+langchain
+langchain-community
+langgraph
+langchain-openai
+langchain-anthropic
+redis
+mysql-connector-python
+python-dotenv
