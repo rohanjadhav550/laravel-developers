@@ -10,9 +10,32 @@ services:
       - .:/app
     networks:
       - laravel-microservices
+    depends_on:
+      - redis
+    restart: unless-stopped
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - DB_HOST=mysql
+      - DB_USERNAME=root
+      - DB_PASSWORD=rootsecret
+      - DB_DATABASE=laravel
+      - LARAVEL_API_URL=http://laravel-app-dev:8000
+
+  redis:
+    image: redis:alpine
+    container_name: redis-vector-db
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - laravel-microservices
     restart: unless-stopped
 
 networks:
   laravel-microservices:
     external: true
     name: laravel-microservices
+
+volumes:
+  redis_data:
