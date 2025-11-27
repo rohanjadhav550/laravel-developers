@@ -79,12 +79,20 @@ def get_api_key_from_laravel(user_id):
         print(f"Error calling Laravel API: {e}")
         return None
 
-def get_llm_config(user_id=2):
+def get_llm_config(user_id=2, ai_provider=None, ai_api_key=None):
     """
-    Get LLM configuration for a specific user from Laravel API.
-    All API keys must be configured in the main Laravel application.
+    Get LLM configuration for a specific user.
+    If ai_provider and ai_api_key are provided, use them directly.
+    Otherwise, fetch from Laravel API.
     """
-    # Get decrypted keys from Laravel API (with caching)
+    # If AI settings are passed directly, use them (avoids circular API calls)
+    if ai_provider and ai_api_key:
+        if ai_provider.lower() == 'openai':
+            return {'provider': 'OpenAI', 'api_key': ai_api_key}
+        elif ai_provider.lower() == 'anthropic':
+            return {'provider': 'Anthropic', 'api_key': ai_api_key}
+
+    # Otherwise, get decrypted keys from Laravel API (with caching)
     settings = get_api_key_from_laravel(user_id)
     if settings:
         provider = settings['provider']

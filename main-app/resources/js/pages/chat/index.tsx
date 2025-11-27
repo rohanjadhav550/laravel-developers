@@ -29,6 +29,11 @@ interface Message {
 }
 
 export default function Chat({ project }: ChatProps) {
+    // Get thread_id from URL params to continue existing conversation
+    const urlParams = new URLSearchParams(window.location.search);
+    const initialThreadId = urlParams.get('thread_id') || null;
+
+    const [threadId, setThreadId] = useState<string | null>(initialThreadId);
     const [messages, setMessages] = useState<Message[]>([
         {
             id: '1',
@@ -160,12 +165,20 @@ export default function Chat({ project }: ChatProps) {
                 },
                 body: JSON.stringify({
                     question: userMessage.content,
+                    thread_id: threadId, // Pass existing thread_id or null for new conversation
                 }),
             });
 
             const data = await response.json();
 
             if (data.success) {
+                // Store thread_id from response for subsequent messages
+                if (data.thread_id && !threadId) {
+                    setThreadId(data.thread_id);
+                    // Update URL with thread_id without reloading
+                    window.history.replaceState({}, '', `/projects/${project.slug}/chat?thread_id=${data.thread_id}`);
+                }
+
                 const aiMessage: Message = {
                     id: (Date.now() + 1).toString(),
                     role: 'assistant',

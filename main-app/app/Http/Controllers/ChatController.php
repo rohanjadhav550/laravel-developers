@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Project;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -11,7 +12,7 @@ class ChatController extends Controller
     /**
      * Send a question to the AI agent and get a response
      */
-    public function askAgent(Request $request)
+    public function askAgent(Request $request, Project $project)
     {
         $request->validate([
             'question' => 'required|string|max:5000',
@@ -22,9 +23,23 @@ class ChatController extends Controller
         $threadId = $request->input('thread_id'); // For conversation continuity
         $agentUrl = env('IDEA_AGENT_URL', 'http://idea-agent:8000');
 
+        // Get user's AI settings
+        $aiSetting = auth()->user()->aiSetting;
+        if (!$aiSetting) {
+            return response()->json([
+                'success' => false,
+                'error' => 'Please configure your AI settings first at /settings/ai',
+            ], 400);
+        }
+
         try {
             $payload = [
                 'question' => $question,
+                'user_id' => auth()->id(),
+                'project_id' => $project->id,
+                // Pass AI settings directly to avoid circular requests
+                'ai_provider' => $aiSetting->provider,
+                'ai_api_key' => $aiSetting->api_key,
             ];
 
             // Include thread_id if provided for conversation continuity

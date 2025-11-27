@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\ConversationController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\ProjectController;
 use Illuminate\Support\Facades\Route;
@@ -36,12 +37,7 @@ Route::middleware(['auth'])->group(function () {
                 ]);
             })->name('projects.chat');
 
-            Route::get('conversations', function () {
-                $project = request()->route('project');
-                return Inertia::render('conversations/index', [
-                    'project' => $project,
-                ]);
-            })->name('projects.conversations');
+            Route::get('conversations', [ConversationController::class, 'index'])->name('projects.conversations');
 
             Route::get('solutions', function () {
                 $project = request()->route('project');

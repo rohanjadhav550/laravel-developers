@@ -6,7 +6,7 @@ from app.agents.developer_agent import get_developer_agent
 from app.tools.rag_tool import search_knowledge_base
 from app.tools.memory_tool import save_requirements, save_solution
 from langchain_core.tools import Tool
-from langgraph.checkpoint.redis import RedisSaver
+from langgraph.checkpoint.memory import MemorySaver
 import operator
 import os
 
@@ -136,8 +136,8 @@ workflow.add_conditional_edges(
     }
 )
 
-# Use RedisSaver for conversation persistence
-# Messages are stored in Redis for fast access and distributed systems support
-redis_url = os.getenv("REDIS_URL", "redis://redis:6379")
-checkpointer = RedisSaver(redis_url)
+# Use MemorySaver for conversation persistence within the session
+# Messages are stored in memory (will persist while container is running)
+# Conversation metadata is still saved to MySQL database
+checkpointer = MemorySaver()
 app_graph = workflow.compile(checkpointer=checkpointer)

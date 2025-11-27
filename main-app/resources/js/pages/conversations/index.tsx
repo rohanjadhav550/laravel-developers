@@ -6,36 +6,21 @@ import { type BreadcrumbItem, type Project } from '@/types';
 import { Head, Link } from '@inertiajs/react';
 import { MessageSquare, Plus } from 'lucide-react';
 
-interface ConversationsProps {
-    project: Project;
+interface Conversation {
+    id: number;
+    thread_id: string;
+    title: string;
+    message_count: number;
+    last_message_at: string;
+    created_at: string;
 }
 
-// Mock data - will be replaced with real data from DB later
-const mockConversations = [
-    {
-        id: '1',
-        title: 'Building a user authentication system',
-        preview: 'I need help implementing secure user authentication...',
-        messageCount: 12,
-        lastMessageAt: new Date(Date.now() - 1000 * 60 * 30), // 30 min ago
-    },
-    {
-        id: '2',
-        title: 'Database schema design discussion',
-        preview: 'What would be the best approach for designing...',
-        messageCount: 8,
-        lastMessageAt: new Date(Date.now() - 1000 * 60 * 60 * 2), // 2 hours ago
-    },
-    {
-        id: '3',
-        title: 'API integration questions',
-        preview: 'How should I handle API rate limiting and...',
-        messageCount: 15,
-        lastMessageAt: new Date(Date.now() - 1000 * 60 * 60 * 24), // 1 day ago
-    },
-];
+interface ConversationsProps {
+    project: Project;
+    conversations: Conversation[];
+}
 
-export default function Conversations({ project }: ConversationsProps) {
+export default function Conversations({ project, conversations }: ConversationsProps) {
     const breadcrumbs: BreadcrumbItem[] = [
         {
             title: project.name,
@@ -47,7 +32,8 @@ export default function Conversations({ project }: ConversationsProps) {
         },
     ];
 
-    const formatTime = (date: Date) => {
+    const formatTime = (dateString: string) => {
+        const date = new Date(dateString);
         const now = new Date();
         const diff = now.getTime() - date.getTime();
         const minutes = Math.floor(diff / (1000 * 60));
@@ -81,7 +67,7 @@ export default function Conversations({ project }: ConversationsProps) {
                     </Button>
                 </div>
 
-                {mockConversations.length === 0 ? (
+                {conversations.length === 0 ? (
                     <Card className="flex flex-col items-center justify-center p-12">
                         <MessageSquare className="mb-4 h-12 w-12 text-muted-foreground" />
                         <h3 className="mb-2 text-lg font-semibold">No conversations yet</h3>
@@ -96,13 +82,13 @@ export default function Conversations({ project }: ConversationsProps) {
                     </Card>
                 ) : (
                     <div className="space-y-4">
-                        {mockConversations.map((conversation) => (
+                        {conversations.map((conversation) => (
                             <Card
                                 key={conversation.id}
                                 className="cursor-pointer transition-shadow hover:shadow-md"
                                 onClick={() => {
-                                    // Navigate to specific conversation (to be implemented)
-                                    window.location.href = `/projects/${project.slug}/chat?conversation=${conversation.id}`;
+                                    // Navigate to specific conversation with thread_id
+                                    window.location.href = `/projects/${project.slug}/chat?thread_id=${conversation.thread_id}`;
                                 }}
                             >
                                 <CardHeader>
@@ -112,16 +98,16 @@ export default function Conversations({ project }: ConversationsProps) {
                                                 <MessageSquare className="h-5 w-5 text-primary" />
                                                 {conversation.title}
                                             </CardTitle>
-                                            <CardDescription className="line-clamp-2">
-                                                {conversation.preview}
+                                            <CardDescription className="text-xs text-muted-foreground">
+                                                Thread ID: {conversation.thread_id}
                                             </CardDescription>
                                         </div>
                                     </div>
                                 </CardHeader>
                                 <CardContent>
                                     <div className="flex items-center justify-between text-sm text-muted-foreground">
-                                        <span>{conversation.messageCount} messages</span>
-                                        <span>{formatTime(conversation.lastMessageAt)}</span>
+                                        <span>{conversation.message_count} messages</span>
+                                        <span>{formatTime(conversation.last_message_at)}</span>
                                     </div>
                                 </CardContent>
                             </Card>

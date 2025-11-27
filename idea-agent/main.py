@@ -12,6 +12,8 @@ class Question(BaseModel):
     thread_id: str = None
     user_id: int = 2  # Default user_id, should be passed from frontend
     project_id: int = None
+    ai_provider: str = None  # OpenAI or Anthropic
+    ai_api_key: str = None  # API key passed from Laravel
 
 @app.get("/")
 def read_root():

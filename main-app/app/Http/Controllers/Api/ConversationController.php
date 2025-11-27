@@ -83,4 +83,25 @@ class ConversationController extends Controller
             'data' => $conversation,
         ]);
     }
+
+    /**
+     * Get conversations for a specific project and user.
+     */
+    public function getProjectConversations(Request $request, int $projectId): JsonResponse
+    {
+        $validated = $request->validate([
+            'user_id' => ['required', 'integer', 'exists:users,id'],
+        ]);
+
+        $conversations = Conversation::where('user_id', $validated['user_id'])
+            ->where('project_id', $projectId)
+            ->where('status', 'active')
+            ->orderBy('last_message_at', 'desc')
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => $conversations,
+        ]);
+    }
 }
