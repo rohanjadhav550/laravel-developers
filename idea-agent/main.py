@@ -30,7 +30,14 @@ def ask_question(q: Question):
     thread_id = q.thread_id or str(uuid.uuid4())
     is_new_conversation = q.thread_id is None
 
-    config = {"configurable": {"thread_id": thread_id}}
+    config = {
+        "configurable": {
+            "thread_id": thread_id,
+            "user_id": q.user_id,
+            "ai_provider": q.ai_provider,
+            "ai_api_key": q.ai_api_key,
+        }
+    }
 
     # Create input message
     inputs = {"messages": [HumanMessage(content=q.question)]}

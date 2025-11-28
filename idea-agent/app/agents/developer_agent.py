@@ -3,8 +3,8 @@ from app.agents.requirement_agent import get_llm
 from app.tools.rag_tool import search_knowledge_base
 from app.tools.memory_tool import save_solution
 
-def get_developer_agent():
-    llm = get_llm()
+def get_developer_agent(user_id=2, ai_provider=None, ai_api_key=None):
+    llm = get_llm(user_id=user_id, ai_provider=ai_provider, ai_api_key=ai_api_key)
     tools = [search_knowledge_base, save_solution]
     
     prompt = ChatPromptTemplate.from_messages([

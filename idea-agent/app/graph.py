@@ -1,6 +1,7 @@
 from typing import TypedDict, Annotated, List
 from langgraph.graph import StateGraph, END
 from langchain_core.messages import BaseMessage, HumanMessage, AIMessage
+from langchain_core.runnables import RunnableConfig
 from app.agents.requirement_agent import get_requirement_agent
 from app.agents.developer_agent import get_developer_agent
 from app.tools.rag_tool import search_knowledge_base
@@ -14,14 +15,24 @@ class AgentState(TypedDict):
     messages: Annotated[List[BaseMessage], operator.add]
     next_step: str
 
-def requirement_node(state: AgentState):
-    agent = get_requirement_agent()
+def requirement_node(state: AgentState, config: RunnableConfig):
+    # Extract AI configuration from config
+    user_id = config.get("configurable", {}).get("user_id", 2)
+    ai_provider = config.get("configurable", {}).get("ai_provider")
+    ai_api_key = config.get("configurable", {}).get("ai_api_key")
+    
+    agent = get_requirement_agent(user_id=user_id, ai_provider=ai_provider, ai_api_key=ai_api_key)
     messages = state['messages']
     response = agent.invoke(messages)
     return {"messages": [response]}
 
-def developer_node(state: AgentState):
-    agent = get_developer_agent()
+def developer_node(state: AgentState, config: RunnableConfig):
+    # Extract AI configuration from config
+    user_id = config.get("configurable", {}).get("user_id", 2)
+    ai_provider = config.get("configurable", {}).get("ai_provider")
+    ai_api_key = config.get("configurable", {}).get("ai_api_key")
+    
+    agent = get_developer_agent(user_id=user_id, ai_provider=ai_provider, ai_api_key=ai_api_key)
     messages = state['messages']
     response = agent.invoke(messages)
     return {"messages": [response]}
