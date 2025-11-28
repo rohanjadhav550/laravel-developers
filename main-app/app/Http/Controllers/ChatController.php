@@ -110,4 +110,44 @@ class ChatController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Get conversation history for a specific thread_id
+     */
+    public function getHistory(Request $request, Project $project)
+    {
+        $request->validate([
+            'thread_id' => 'required|string|max:255',
+        ]);
+
+        $threadId = $request->input('thread_id');
+        $agentUrl = env('IDEA_AGENT_URL', 'http://idea-agent:8000');
+
+        try {
+            $response = Http::timeout(10)->get("{$agentUrl}/conversation/{$threadId}");
+
+            if ($response->successful()) {
+                return response()->json([
+                    'success' => true,
+                    'data' => $response->json(),
+                ]);
+            }
+
+            return response()->json([
+                'success' => false,
+                'error' => 'Failed to fetch conversation history',
+            ], 500);
+
+        } catch (\Exception $e) {
+            Log::error('Error fetching conversation history', [
+                'thread_id' => $threadId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'error' => 'Could not fetch conversation history',
+            ], 500);
+        }
+    }
 }

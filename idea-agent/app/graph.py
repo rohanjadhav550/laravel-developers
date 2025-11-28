@@ -7,35 +7,35 @@ from app.agents.developer_agent import get_developer_agent
 from app.tools.rag_tool import search_knowledge_base
 from app.tools.memory_tool import save_requirements, save_solution
 from langchain_core.tools import Tool
-from langgraph.checkpoint.memory import MemorySaver
 import operator
 import os
 
 class AgentState(TypedDict):
     messages: Annotated[List[BaseMessage], operator.add]
     next_step: str
+    current_agent: str  # Track which agent is currently active
 
 def requirement_node(state: AgentState, config: RunnableConfig):
     # Extract AI configuration from config
     user_id = config.get("configurable", {}).get("user_id", 2)
     ai_provider = config.get("configurable", {}).get("ai_provider")
     ai_api_key = config.get("configurable", {}).get("ai_api_key")
-    
+
     agent = get_requirement_agent(user_id=user_id, ai_provider=ai_provider, ai_api_key=ai_api_key)
     messages = state['messages']
     response = agent.invoke(messages)
-    return {"messages": [response]}
+    return {"messages": [response], "current_agent": "requirement_agent"}
 
 def developer_node(state: AgentState, config: RunnableConfig):
     # Extract AI configuration from config
     user_id = config.get("configurable", {}).get("user_id", 2)
     ai_provider = config.get("configurable", {}).get("ai_provider")
     ai_api_key = config.get("configurable", {}).get("ai_api_key")
-    
+
     agent = get_developer_agent(user_id=user_id, ai_provider=ai_provider, ai_api_key=ai_api_key)
     messages = state['messages']
     response = agent.invoke(messages)
-    return {"messages": [response]}
+    return {"messages": [response], "current_agent": "developer_agent"}
 
 def router(state: AgentState):
     messages = state['messages']
@@ -87,7 +87,22 @@ workflow.add_node("requirement_agent", requirement_node)
 workflow.add_node("developer_agent", developer_node)
 workflow.add_node("tools", tool_node)
 
-workflow.set_entry_point("requirement_agent")
+# Dynamic entry point based on conversation state
+# This function determines which agent to start with when resuming a conversation
+def get_entry_point(state: AgentState):
+    # If current_agent is set (resuming conversation), use that agent
+    if state.get("current_agent") == "developer_agent":
+        return "developer_agent"
+    # Default to requirement_agent for new conversations
+    return "requirement_agent"
+
+workflow.set_conditional_entry_point(
+    get_entry_point,
+    {
+        "requirement_agent": "requirement_agent",
+        "developer_agent": "developer_agent"
+    }
+)
 
 def requirement_conditional(state: AgentState):
     last_message = state['messages'][-1]
@@ -150,5 +165,8 @@ workflow.add_conditional_edges(
 # Use MemorySaver for conversation persistence within the session
 # Messages are stored in memory (will persist while container is running)
 # Conversation metadata is still saved to MySQL database
+# TODO: Switch to RedisSaver for persistence across container restarts
+from langgraph.checkpoint.memory import MemorySaver
+
 checkpointer = MemorySaver()
 app_graph = workflow.compile(checkpointer=checkpointer)

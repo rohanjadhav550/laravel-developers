@@ -52,6 +52,7 @@ Route::middleware(['auth'])->group(function () {
             
             // Chat AI agent
             Route::post('chat/ask', [\App\Http\Controllers\ChatController::class, 'askAgent'])->name('chat.ask');
+            Route::get('chat/history', [\App\Http\Controllers\ChatController::class, 'getHistory'])->name('chat.history');
         });
 });
 

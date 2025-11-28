@@ -18,7 +18,9 @@
       "Bash(docker exec:*)",
       "Bash(docker-compose:*)",
       "Bash(curl:*)",
-      "Bash(cd:*)"
+      "Bash(cd:*)",
+      "Bash(python -m py_compile:*)",
+      "mcp__playwright__browser_console_messages"
     ],
     "deny": [],
     "ask": []

@@ -92,3 +92,58 @@ def ask_question(q: Question):
         error_details = traceback.format_exc()
         print(f"Error processing question: {error_details}")
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/conversation/{thread_id}")
+def get_conversation(thread_id: str):
+    """
+    Retrieve conversation history for a given thread_id from Redis checkpoint.
+    """
+    try:
+        from app.graph import app_graph
+        
+        # Get the state for this thread
+        config = {"configurable": {"thread_id": thread_id}}
+        
+        # Get the current state from checkpointer
+        state = app_graph.get_state(config)
+        
+        if not state or not state.values.get('messages'):
+            return {
+                "thread_id": thread_id,
+                "messages": [],
+                "message_count": 0
+            }
+        
+        # Convert messages to serializable format
+        # Filter out tool messages and internal orchestration
+        messages = []
+        for msg in state.values['messages']:
+            msg_class = msg.__class__.__name__
+
+            # Skip tool result messages (they have a 'name' attribute set)
+            if hasattr(msg, 'name') and msg.name:
+                continue
+
+            # Skip AI messages that are calling tools (internal orchestration)
+            if msg_class == "AIMessage" and hasattr(msg, 'tool_calls') and msg.tool_calls:
+                continue
+
+            # Only include conversational HumanMessage and AIMessage
+            if msg_class in ["HumanMessage", "AIMessage"]:
+                messages.append({
+                    "role": "user" if msg_class == "HumanMessage" else "assistant",
+                    "content": msg.content,
+                    "timestamp": getattr(msg, 'timestamp', None)
+                })
+        
+        return {
+            "thread_id": thread_id,
+            "messages": messages,
+            "message_count": len(messages)
+        }
+        
+    except Exception as e:
+        import traceback
+        error_details = traceback.format_exc()
+        print(f"Error retrieving conversation: {error_details}")
+        raise HTTPException(status_code=500, detail=str(e))

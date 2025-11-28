@@ -64,6 +64,40 @@ export default function Chat({ project }: ChatProps) {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     };
 
+    // Load conversation history if thread_id is present
+    useEffect(() => {
+        const loadHistory = async () => {
+            if (initialThreadId) {
+                try {
+                    const response = await fetch(`/projects/${project.slug}/chat/history?thread_id=${initialThreadId}`, {
+                        headers: {
+                            'X-CSRF-TOKEN': (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content || '',
+                        },
+                    });
+
+                    const data = await response.json();
+
+                    if (data.success && data.data.messages && data.data.messages.length > 0) {
+                        // Convert backend messages to frontend format
+                        const loadedMessages: Message[] = data.data.messages.map((msg: any, index: number) => ({
+                            id: `${initialThreadId}-${index}`,
+                            role: msg.role,
+                            content: msg.content,
+                            timestamp: msg.timestamp ? new Date(msg.timestamp) : new Date(),
+                        }));
+
+                        setMessages(loadedMessages);
+                    }
+                } catch (error) {
+                    console.error('Failed to load conversation history:', error);
+                    // Keep the default welcome message if loading fails
+                }
+            }
+        };
+
+        loadHistory();
+    }, [initialThreadId, project.slug]);
+
     useEffect(() => {
         scrollToBottom();
     }, [messages]);
