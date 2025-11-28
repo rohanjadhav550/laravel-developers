@@ -72,6 +72,14 @@ class User extends Authenticatable
     }
 
     /**
+     * Get the solutions owned by the user.
+     */
+    public function solutions(): HasMany
+    {
+        return $this->hasMany(Solution::class);
+    }
+
+    /**
      * Get the user's current project from session.
      */
     public function currentProject(): ?Project

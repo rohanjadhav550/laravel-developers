@@ -1,7 +1,7 @@
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from app.graph import app_graph
-from app.database import save_conversation_metadata
+from app.database import save_conversation_metadata, create_solution
 from langchain_core.messages import HumanMessage
 import uuid
 
@@ -61,13 +61,23 @@ def ask_question(q: Question):
             title = q.question[:50] + ("..." if len(q.question) > 50 else "")
 
         # Save conversation metadata to MySQL
-        save_conversation_metadata(
+        conversation_data = save_conversation_metadata(
             user_id=q.user_id,
             thread_id=thread_id,
             title=title,
             message_count=message_count,
             project_id=q.project_id
         )
+
+        # Create solution for new conversations
+        if is_new_conversation and conversation_data:
+            create_solution(
+                conversation_id=conversation_data.get('id'),
+                user_id=q.user_id,
+                title=title or "New Solution",
+                description=f"Solution for: {q.question[:100]}",
+                project_id=q.project_id
+            )
 
         # Determine if the conversation has ended or is waiting for more input
         # The graph returns END when it needs user input

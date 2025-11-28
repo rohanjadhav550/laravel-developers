@@ -39,4 +39,12 @@ class Conversation extends Model
     {
         return $this->belongsTo(Project::class);
     }
+
+    /**
+     * Get the solution associated with the conversation.
+     */
+    public function solution()
+    {
+        return $this->hasOne(Solution::class);
+    }
 }

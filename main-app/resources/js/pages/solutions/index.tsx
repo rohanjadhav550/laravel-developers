@@ -5,77 +5,93 @@ import BackButton from '@/components/back-button';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem, type Project } from '@/types';
 import { Head, Link } from '@inertiajs/react';
-import { CheckCircle, Clock, Code, FileText, Lightbulb } from 'lucide-react';
+import { CheckCircle, Clock, Code, FileText, Lightbulb, XCircle } from 'lucide-react';
+
+interface Solution {
+    id: number;
+    conversation_id: number;
+    user_id: number;
+    project_id: number | null;
+    title: string;
+    description: string | null;
+    requirements: string | null;
+    technical_solution: string | null;
+    status: 'draft' | 'in_progress' | 'requirement_ready' | 'solution_ready' | 'approved' | 'rejected' | 'completed';
+    requirement_approved_at: string | null;
+    solution_approved_at: string | null;
+    created_at: string;
+    updated_at: string;
+}
 
 interface SolutionsProps {
     project: Project;
+    solutions: {
+        data: Solution[];
+        current_page: number;
+        last_page: number;
+        per_page: number;
+        total: number;
+    };
+    filters: {
+        search: string;
+        status: string;
+        per_page: number;
+    };
+    statuses: Record<string, string>;
 }
 
-// Mock data - will be replaced with real data from DB later
-const mockSolutions = [
-    {
-        id: '1',
-        title: 'User Authentication Implementation',
-        description: 'JWT-based authentication system with refresh tokens',
-        status: 'implemented' as const,
-        category: 'authentication',
-        acceptedAt: new Date(Date.now() - 1000 * 60 * 60 * 48), // 2 days ago
-        code: true,
-        documentation: true,
+const statusConfig: Record<string, { label: string; color: string; icon: any }> = {
+    draft: {
+        label: 'Draft',
+        color: 'bg-gray-500/10 text-gray-700 dark:text-gray-400',
+        icon: FileText,
     },
-    {
-        id: '2',
-        title: 'Database Migration Strategy',
-        description: 'Optimized database schema with proper indexing',
-        status: 'accepted' as const,
-        category: 'database',
-        acceptedAt: new Date(Date.now() - 1000 * 60 * 60 * 24), // 1 day ago
-        code: false,
-        documentation: true,
-    },
-    {
-        id: '3',
-        title: 'API Rate Limiting Solution',
-        description: 'Redis-based rate limiting for API endpoints',
-        status: 'in-progress' as const,
-        category: 'api',
-        acceptedAt: new Date(Date.now() - 1000 * 60 * 60 * 5), // 5 hours ago
-        code: true,
-        documentation: false,
-    },
-];
-
-const statusConfig = {
-    implemented: {
-        label: 'Implemented',
-        color: 'bg-green-500/10 text-green-700 dark:text-green-400',
-        icon: CheckCircle,
-    },
-    accepted: {
-        label: 'Accepted',
-        color: 'bg-blue-500/10 text-blue-700 dark:text-blue-400',
-        icon: Lightbulb,
-    },
-    'in-progress': {
+    in_progress: {
         label: 'In Progress',
         color: 'bg-yellow-500/10 text-yellow-700 dark:text-yellow-400',
         icon: Clock,
     },
+    requirement_ready: {
+        label: 'Requirement Ready',
+        color: 'bg-blue-500/10 text-blue-700 dark:text-blue-400',
+        icon: FileText,
+    },
+    solution_ready: {
+        label: 'Solution Ready',
+        color: 'bg-purple-500/10 text-purple-700 dark:text-purple-400',
+        icon: Code,
+    },
+    approved: {
+        label: 'Approved',
+        color: 'bg-green-500/10 text-green-700 dark:text-green-400',
+        icon: CheckCircle,
+    },
+    rejected: {
+        label: 'Rejected',
+        color: 'bg-red-500/10 text-red-700 dark:text-red-400',
+        icon: XCircle,
+    },
+    completed: {
+        label: 'Completed',
+        color: 'bg-green-500/10 text-green-700 dark:text-green-400',
+        icon: CheckCircle,
+    },
 };
 
-export default function Solutions({ project }: SolutionsProps) {
+export default function Solutions({ project, solutions, filters, statuses }: SolutionsProps) {
     const breadcrumbs: BreadcrumbItem[] = [
         {
-            title: project.name,
-            href: `/projects/${project.slug}/home`,
+            title: project?.name || 'Project',
+            href: `/projects/${project?.slug || 'unknown'}/home`,
         },
         {
             title: 'Solutions',
-            href: `/projects/${project.slug}/solutions`,
+            href: `/projects/${project?.slug || 'unknown'}/solutions`,
         },
     ];
 
-    const formatDate = (date: Date) => {
+    const formatDate = (dateString: string) => {
+        const date = new Date(dateString);
         return date.toLocaleDateString(undefined, {
             month: 'short',
             day: 'numeric',
@@ -85,7 +101,7 @@ export default function Solutions({ project }: SolutionsProps) {
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title={`${project.name} - Solutions`} />
+            <Head title={`${project?.name || 'Solutions'} - Solutions`} />
             <div className="flex h-full flex-1 flex-col gap-6 p-4">
                 <div className="mb-2">
                     <BackButton label="Back to Project" />
@@ -94,18 +110,18 @@ export default function Solutions({ project }: SolutionsProps) {
                     <div>
                         <h1 className="text-2xl font-bold">Solutions</h1>
                         <p className="text-muted-foreground">
-                            Your accepted solutions for {project.name}
+                            Your solutions for {project?.name || 'this project'}
                         </p>
                     </div>
                     <Button asChild>
-                        <Link href={`/projects/${project.slug}/chat`}>
+                        <Link href={`/projects/${project?.slug || 'unknown'}/chat`}>
                             <Lightbulb className="mr-2 h-4 w-4" />
                             Get New Solution
                         </Link>
                     </Button>
                 </div>
 
-                {mockSolutions.length === 0 ? (
+                {solutions.data.length === 0 ? (
                     <Card className="flex flex-col items-center justify-center p-12">
                         <Lightbulb className="mb-4 h-12 w-12 text-muted-foreground" />
                         <h3 className="mb-2 text-lg font-semibold">No solutions yet</h3>
@@ -120,64 +136,54 @@ export default function Solutions({ project }: SolutionsProps) {
                     </Card>
                 ) : (
                     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                        {mockSolutions.map((solution) => {
-                            const StatusIcon = statusConfig[solution.status].icon;
+                        {solutions.data.map((solution) => {
+                            const StatusIcon = statusConfig[solution.status]?.icon || FileText;
                             return (
-                                <Card
+                                <Link
                                     key={solution.id}
-                                    className="cursor-pointer transition-shadow hover:shadow-md"
-                                    onClick={() => {
-                                        // Navigate to solution detail (to be implemented)
-                                        console.log('View solution:', solution.id);
-                                    }}
+                                    href={`/projects/${project?.slug || 'unknown'}/solutions/${solution.id}`}
                                 >
-                                    <CardHeader>
-                                        <div className="mb-2 flex items-start justify-between">
-                                            <Badge
-                                                variant="secondary"
-                                                className={statusConfig[solution.status].color}
-                                            >
-                                                <StatusIcon className="mr-1 h-3 w-3" />
-                                                {statusConfig[solution.status].label}
-                                            </Badge>
-                                        </div>
-                                        <CardTitle className="line-clamp-2">
-                                            {solution.title}
-                                        </CardTitle>
-                                        <CardDescription className="line-clamp-3">
-                                            {solution.description}
-                                        </CardDescription>
-                                    </CardHeader>
-                                    <CardContent>
-                                        <div className="space-y-3">
-                                            <div className="flex gap-2">
+                                    <Card className="cursor-pointer transition-shadow hover:shadow-md">
+                                        <CardHeader>
+                                            <div className="mb-2 flex items-start justify-between">
                                                 <Badge
-                                                    variant="outline"
-                                                    className="text-xs capitalize"
+                                                    variant="secondary"
+                                                    className={statusConfig[solution.status]?.color || 'bg-gray-500/10'}
                                                 >
-                                                    {solution.category}
+                                                    <StatusIcon className="mr-1 h-3 w-3" />
+                                                    {statusConfig[solution.status]?.label || solution.status}
                                                 </Badge>
                                             </div>
-                                            <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                                                {solution.code && (
-                                                    <div className="flex items-center gap-1">
-                                                        <Code className="h-4 w-4" />
-                                                        <span>Code</span>
-                                                    </div>
-                                                )}
-                                                {solution.documentation && (
-                                                    <div className="flex items-center gap-1">
-                                                        <FileText className="h-4 w-4" />
-                                                        <span>Docs</span>
-                                                    </div>
-                                                )}
+                                            <CardTitle className="line-clamp-2">
+                                                {solution.title}
+                                            </CardTitle>
+                                            <CardDescription className="line-clamp-3">
+                                                {solution.description || 'No description available'}
+                                            </CardDescription>
+                                        </CardHeader>
+                                        <CardContent>
+                                            <div className="space-y-3">
+                                                <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                                                    {solution.requirements && (
+                                                        <div className="flex items-center gap-1">
+                                                            <FileText className="h-4 w-4" />
+                                                            <span>Requirements</span>
+                                                        </div>
+                                                    )}
+                                                    {solution.technical_solution && (
+                                                        <div className="flex items-center gap-1">
+                                                            <Code className="h-4 w-4" />
+                                                            <span>Solution</span>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                <div className="text-xs text-muted-foreground">
+                                                    Updated {formatDate(solution.updated_at)}
+                                                </div>
                                             </div>
-                                            <div className="text-xs text-muted-foreground">
-                                                Accepted {formatDate(solution.acceptedAt)}
-                                            </div>
-                                        </div>
-                                    </CardContent>
-                                </Card>
+                                        </CardContent>
+                                    </Card>
+                                </Link>
                             );
                         })}
                     </div>

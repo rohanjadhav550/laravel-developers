@@ -3,6 +3,7 @@
 use App\Http\Controllers\ConversationController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\ProjectController;
+use App\Http\Controllers\SolutionController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use Laravel\Fortify\Features;
@@ -39,12 +40,11 @@ Route::middleware(['auth'])->group(function () {
 
             Route::get('conversations', [ConversationController::class, 'index'])->name('projects.conversations');
 
-            Route::get('solutions', function () {
-                $project = request()->route('project');
-                return Inertia::render('solutions/index', [
-                    'project' => $project,
-                ]);
-            })->name('projects.solutions');
+            // Solutions
+            Route::get('solutions', [SolutionController::class, 'index'])->name('projects.solutions');
+            Route::get('solutions/{solution}', [SolutionController::class, 'show'])->name('solutions.show');
+            Route::post('solutions/{solution}/approve-requirements', [SolutionController::class, 'approveRequirements'])->name('solutions.approve-requirements');
+            Route::post('solutions/{solution}/approve-solution', [SolutionController::class, 'approveSolution'])->name('solutions.approve-solution');
 
             // Chat file upload
             Route::post('chat/upload', [\App\Http\Controllers\ChatFileController::class, 'upload'])->name('chat.file.upload');

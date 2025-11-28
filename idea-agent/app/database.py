@@ -200,3 +200,131 @@ def save_solution_to_laravel(thread_id, solution):
     except Exception as e:
         print(f"Error saving solution: {e}")
         return None
+
+def create_solution(conversation_id, user_id, title, description=None, project_id=None):
+    """
+    Create a new solution for a conversation.
+    Called when a conversation starts.
+    """
+    try:
+        laravel_url = os.getenv("LARAVEL_API_URL", "http://laravel-app-dev:8000")
+
+        payload = {
+            'conversation_id': conversation_id,
+            'user_id': user_id,
+            'title': title,
+            'description': description,
+            'project_id': project_id,
+            'status': 'in_progress',
+        }
+
+        response = requests.post(
+            f"{laravel_url}/api/internal/solutions",
+            json=payload,
+            timeout=10
+        )
+
+        if response.status_code in [200, 201]:
+            print(f"Solution created for conversation {conversation_id}")
+            return response.json().get('data')
+        elif response.status_code == 409:
+            # Solution already exists
+            print(f"Solution already exists for conversation {conversation_id}")
+            return response.json().get('data')
+        else:
+            print(f"Failed to create solution: {response.status_code} - {response.text}")
+            return None
+
+    except Exception as e:
+        print(f"Error creating solution: {e}")
+        return None
+
+def update_solution_requirements(conversation_id, requirements):
+    """
+    Update solution requirements during conversation.
+    """
+    try:
+        laravel_url = os.getenv("LARAVEL_API_URL", "http://laravel-app-dev:8000")
+
+        # First, get the solution ID for this conversation
+        response = requests.get(
+            f"{laravel_url}/api/internal/conversations/{conversation_id}",
+            timeout=5
+        )
+
+        if response.status_code != 200:
+            print(f"Failed to find conversation: {response.status_code}")
+            return None
+
+        conversation = response.json().get('data')
+        if not conversation:
+            print(f"Conversation not found: {conversation_id}")
+            return None
+
+        # Update requirements via conversation_id
+        payload = {
+            'conversation_id': conversation['id'],
+            'requirements': requirements,
+        }
+
+        response = requests.put(
+            f"{laravel_url}/api/internal/solutions/by-conversation",
+            json=payload,
+            timeout=10
+        )
+
+        if response.status_code == 200:
+            print(f"Solution requirements updated for conversation {conversation_id}")
+            return response.json().get('data')
+        else:
+            print(f"Failed to update solution requirements: {response.status_code} - {response.text}")
+            return None
+
+    except Exception as e:
+        print(f"Error updating solution requirements: {e}")
+        return None
+
+def update_solution_technical(conversation_id, technical_solution):
+    """
+    Update solution technical solution during conversation.
+    """
+    try:
+        laravel_url = os.getenv("LARAVEL_API_URL", "http://laravel-app-dev:8000")
+
+        # First, get the solution ID for this conversation
+        response = requests.get(
+            f"{laravel_url}/api/internal/conversations/{conversation_id}",
+            timeout=5
+        )
+
+        if response.status_code != 200:
+            print(f"Failed to find conversation: {response.status_code}")
+            return None
+
+        conversation = response.json().get('data')
+        if not conversation:
+            print(f"Conversation not found: {conversation_id}")
+            return None
+
+        # Update technical solution via conversation_id
+        payload = {
+            'conversation_id': conversation['id'],
+            'technical_solution': technical_solution,
+        }
+
+        response = requests.put(
+            f"{laravel_url}/api/internal/solutions/by-conversation/technical",
+            json=payload,
+            timeout=10
+        )
+
+        if response.status_code == 200:
+            print(f"Solution technical solution updated for conversation {conversation_id}")
+            return response.json().get('data')
+        else:
+            print(f"Failed to update technical solution: {response.status_code} - {response.text}")
+            return None
+
+    except Exception as e:
+        print(f"Error updating technical solution: {e}")
+        return None
