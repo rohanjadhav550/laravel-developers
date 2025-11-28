@@ -20,7 +20,10 @@
       "Bash(curl:*)",
       "Bash(cd:*)",
       "Bash(python -m py_compile:*)",
-      "mcp__playwright__browser_console_messages"
+      "mcp__playwright__browser_console_messages",
+      "Bash(find:*)",
+      "Bash(php artisan:*)",
+      "Bash(python verify_agent.py:*)"
     ],
     "deny": [],
     "ask": []

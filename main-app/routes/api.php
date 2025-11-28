@@ -10,6 +10,8 @@ Route::get('internal/ai-settings', [AiSettingsApiController::class, 'getSettings
 Route::post('internal/conversations', [ConversationController::class, 'store']);
 Route::get('internal/conversations', [ConversationController::class, 'index']);
 Route::get('internal/conversations/{threadId}', [ConversationController::class, 'show']);
+Route::post('internal/conversations/requirements', [ConversationController::class, 'saveRequirements']);
+Route::post('internal/conversations/solution', [ConversationController::class, 'saveSolution']);
 
 Route::middleware(['auth', 'project'])->group(function () {
     Route::prefix('projects/{project}')->group(function () {

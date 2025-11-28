@@ -104,4 +104,66 @@ class ConversationController extends Controller
             'data' => $conversations,
         ]);
     }
+
+    /**
+     * Save requirements for a conversation.
+     * Called by the requirement agent after gathering requirements.
+     */
+    public function saveRequirements(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'thread_id' => ['required', 'string', 'exists:conversations,thread_id'],
+            'requirements' => ['required', 'string'],
+        ]);
+
+        $conversation = Conversation::where('thread_id', $validated['thread_id'])->first();
+
+        if (!$conversation) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Conversation not found.',
+            ], 404);
+        }
+
+        $conversation->update([
+            'requirements' => $validated['requirements'],
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Requirements saved successfully.',
+            'data' => $conversation,
+        ]);
+    }
+
+    /**
+     * Save solution for a conversation.
+     * Called by the developer agent after proposing a solution.
+     */
+    public function saveSolution(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'thread_id' => ['required', 'string', 'exists:conversations,thread_id'],
+            'solution' => ['required', 'string'],
+        ]);
+
+        $conversation = Conversation::where('thread_id', $validated['thread_id'])->first();
+
+        if (!$conversation) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Conversation not found.',
+            ], 404);
+        }
+
+        $conversation->update([
+            'solution' => $validated['solution'],
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Solution saved successfully.',
+            'data' => $conversation,
+        ]);
+    }
 }

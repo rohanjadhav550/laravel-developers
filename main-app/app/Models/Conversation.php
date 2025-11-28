@@ -14,6 +14,8 @@ class Conversation extends Model
         'project_id',
         'status',
         'summary',
+        'requirements',
+        'solution',
         'message_count',
         'last_message_at',
     ];

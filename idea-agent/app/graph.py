@@ -60,25 +60,32 @@ def router(state: AgentState):
     return "continue"
 
 # Tools execution node
-def tool_node(state: AgentState):
+def tool_node(state: AgentState, config: RunnableConfig):
     messages = state['messages']
     last_message = messages[-1]
-    
+
     if isinstance(last_message, AIMessage) and last_message.tool_calls:
         tool_call = last_message.tool_calls[0]
         tool_name = tool_call['name']
         tool_args = tool_call['args']
-        
+
+        # Get thread_id from config
+        thread_id = config.get("configurable", {}).get("thread_id")
+
         if tool_name == 'save_requirements':
+            # Add thread_id to tool args
+            tool_args['thread_id'] = thread_id
             result = save_requirements.invoke(tool_args)
             return {"messages": [HumanMessage(content=str(result), name=tool_name)], "next_step": "developer"}
         elif tool_name == 'save_solution':
+            # Add thread_id to tool args
+            tool_args['thread_id'] = thread_id
             result = save_solution.invoke(tool_args)
             return {"messages": [HumanMessage(content=str(result), name=tool_name)], "next_step": "end"}
         elif tool_name == 'search_knowledge_base':
             result = search_knowledge_base.invoke(tool_args)
             return {"messages": [HumanMessage(content=str(result), name=tool_name)], "next_step": "developer"}
-            
+
     return {"messages": []}
 
 workflow = StateGraph(AgentState)

@@ -142,3 +142,61 @@ def save_conversation_metadata(user_id, thread_id, title=None, message_count=Non
     except Exception as e:
         print(f"Error saving conversation metadata: {e}")
         return None
+
+def save_requirements_to_laravel(thread_id, requirements):
+    """
+    Save requirements document to Laravel's MySQL database.
+    """
+    try:
+        laravel_url = os.getenv("LARAVEL_API_URL", "http://laravel-app-dev:8000")
+
+        payload = {
+            'thread_id': thread_id,
+            'requirements': requirements,
+        }
+
+        response = requests.post(
+            f"{laravel_url}/api/internal/conversations/requirements",
+            json=payload,
+            timeout=10
+        )
+
+        if response.status_code == 200:
+            print(f"Requirements saved for thread {thread_id}")
+            return response.json().get('data')
+        else:
+            print(f"Failed to save requirements: {response.status_code} - {response.text}")
+            return None
+
+    except Exception as e:
+        print(f"Error saving requirements: {e}")
+        return None
+
+def save_solution_to_laravel(thread_id, solution):
+    """
+    Save solution document to Laravel's MySQL database.
+    """
+    try:
+        laravel_url = os.getenv("LARAVEL_API_URL", "http://laravel-app-dev:8000")
+
+        payload = {
+            'thread_id': thread_id,
+            'solution': solution,
+        }
+
+        response = requests.post(
+            f"{laravel_url}/api/internal/conversations/solution",
+            json=payload,
+            timeout=10
+        )
+
+        if response.status_code == 200:
+            print(f"Solution saved for thread {thread_id}")
+            return response.json().get('data')
+        else:
+            print(f"Failed to save solution: {response.status_code} - {response.text}")
+            return None
+
+    except Exception as e:
+        print(f"Error saving solution: {e}")
+        return None
