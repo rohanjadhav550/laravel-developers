@@ -1,6 +1,6 @@
 from typing import TypedDict, Annotated, List
 from langgraph.graph import StateGraph, END
-from langchain_core.messages import BaseMessage, HumanMessage, AIMessage
+from langchain_core.messages import BaseMessage, HumanMessage, AIMessage, ToolMessage
 from langchain_core.runnables import RunnableConfig
 from app.agents.requirement_agent import get_requirement_agent
 from app.agents.developer_agent import get_developer_agent
@@ -68,6 +68,7 @@ def tool_node(state: AgentState, config: RunnableConfig):
         tool_call = last_message.tool_calls[0]
         tool_name = tool_call['name']
         tool_args = tool_call['args']
+        tool_call_id = tool_call['id']
 
         # Get thread_id from config
         thread_id = config.get("configurable", {}).get("thread_id")
@@ -76,15 +77,15 @@ def tool_node(state: AgentState, config: RunnableConfig):
             # Add thread_id to tool args
             tool_args['thread_id'] = thread_id
             result = save_requirements.invoke(tool_args)
-            return {"messages": [HumanMessage(content=str(result), name=tool_name)], "next_step": "developer"}
+            return {"messages": [ToolMessage(content=str(result), tool_call_id=tool_call_id)], "next_step": "developer"}
         elif tool_name == 'save_solution':
             # Add thread_id to tool args
             tool_args['thread_id'] = thread_id
             result = save_solution.invoke(tool_args)
-            return {"messages": [HumanMessage(content=str(result), name=tool_name)], "next_step": "end"}
+            return {"messages": [ToolMessage(content=str(result), tool_call_id=tool_call_id)], "next_step": "end"}
         elif tool_name == 'search_knowledge_base':
             result = search_knowledge_base.invoke(tool_args)
-            return {"messages": [HumanMessage(content=str(result), name=tool_name)], "next_step": "developer"}
+            return {"messages": [ToolMessage(content=str(result), tool_call_id=tool_call_id)], "next_step": "developer"}
 
     return {"messages": []}
 
