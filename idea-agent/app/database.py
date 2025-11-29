@@ -145,61 +145,105 @@ def save_conversation_metadata(user_id, thread_id, title=None, message_count=Non
 
 def save_requirements_to_laravel(thread_id, requirements):
     """
-    Save requirements document to Laravel's MySQL database.
+    Save requirements document to Laravel's MySQL database with retry logic.
     """
-    try:
-        laravel_url = os.getenv("LARAVEL_API_URL", "http://laravel-app-dev:8000")
+    laravel_url = os.getenv("LARAVEL_API_URL", "http://laravel-app-dev:8000")
 
-        payload = {
-            'thread_id': thread_id,
-            'requirements': requirements,
-        }
+    payload = {
+        'thread_id': thread_id,
+        'requirements': requirements,
+    }
 
-        response = requests.post(
-            f"{laravel_url}/api/internal/conversations/requirements",
-            json=payload,
-            timeout=10
-        )
+    # Retry with increasing timeouts (30s, 45s, 60s)
+    max_retries = 3
+    timeouts = [30, 45, 60]
 
-        if response.status_code == 200:
-            print(f"Requirements saved for thread {thread_id}")
-            return response.json().get('data')
-        else:
-            print(f"Failed to save requirements: {response.status_code} - {response.text}")
+    for attempt in range(max_retries):
+        try:
+            print(f"Saving requirements for thread {thread_id} (attempt {attempt + 1}/{max_retries}, length: {len(requirements)} chars)...")
+
+            response = requests.post(
+                f"{laravel_url}/api/internal/conversations/requirements",
+                json=payload,
+                timeout=timeouts[attempt]
+            )
+
+            if response.status_code == 200:
+                print(f"✓ Requirements saved successfully for thread {thread_id}")
+                return response.json().get('data')
+            else:
+                print(f"Failed to save requirements: {response.status_code} - {response.text}")
+                if attempt < max_retries - 1:
+                    time.sleep(2)  # Wait before retry
+                    continue
+                return None
+
+        except requests.exceptions.Timeout:
+            print(f"Timeout on attempt {attempt + 1}/{max_retries} (timeout: {timeouts[attempt]}s)")
+            if attempt < max_retries - 1:
+                time.sleep(2)
+                continue
+            print(f"✗ Failed to save requirements after {max_retries} attempts - TIMEOUT")
+            return None
+        except Exception as e:
+            print(f"Error saving requirements: {e}")
+            if attempt < max_retries - 1:
+                time.sleep(2)
+                continue
             return None
 
-    except Exception as e:
-        print(f"Error saving requirements: {e}")
-        return None
+    return None
 
 def save_solution_to_laravel(thread_id, solution):
     """
-    Save solution document to Laravel's MySQL database.
+    Save solution document to Laravel's MySQL database with retry logic.
     """
-    try:
-        laravel_url = os.getenv("LARAVEL_API_URL", "http://laravel-app-dev:8000")
+    laravel_url = os.getenv("LARAVEL_API_URL", "http://laravel-app-dev:8000")
 
-        payload = {
-            'thread_id': thread_id,
-            'solution': solution,
-        }
+    payload = {
+        'thread_id': thread_id,
+        'solution': solution,
+    }
 
-        response = requests.post(
-            f"{laravel_url}/api/internal/conversations/solution",
-            json=payload,
-            timeout=10
-        )
+    # Retry with increasing timeouts (30s, 45s, 60s)
+    max_retries = 3
+    timeouts = [30, 45, 60]
 
-        if response.status_code == 200:
-            print(f"Solution saved for thread {thread_id}")
-            return response.json().get('data')
-        else:
-            print(f"Failed to save solution: {response.status_code} - {response.text}")
+    for attempt in range(max_retries):
+        try:
+            print(f"Saving solution for thread {thread_id} (attempt {attempt + 1}/{max_retries}, length: {len(solution)} chars)...")
+
+            response = requests.post(
+                f"{laravel_url}/api/internal/conversations/solution",
+                json=payload,
+                timeout=timeouts[attempt]
+            )
+
+            if response.status_code == 200:
+                print(f"✓ Solution saved successfully for thread {thread_id}")
+                return response.json().get('data')
+            else:
+                print(f"Failed to save solution: {response.status_code} - {response.text}")
+                if attempt < max_retries - 1:
+                    time.sleep(2)
+                    continue
+                return None
+
+        except requests.exceptions.Timeout:
+            print(f"Timeout on attempt {attempt + 1}/{max_retries} (timeout: {timeouts[attempt]}s)")
+            if attempt < max_retries - 1:
+                time.sleep(2)
+                continue
+            print(f"✗ Failed to save solution after {max_retries} attempts - TIMEOUT")
+            return None
+        except Exception as e:
+            print(f"Error saving solution: {e}")
+            if attempt < max_retries - 1:
+                time.sleep(2)
+                continue
             return None
 
-    except Exception as e:
-        print(f"Error saving solution: {e}")
-        return None
+    return None
 
 def create_solution(conversation_id, user_id, title, description=None, project_id=None):
     """
@@ -239,92 +283,142 @@ def create_solution(conversation_id, user_id, title, description=None, project_i
         print(f"Error creating solution: {e}")
         return None
 
-def update_solution_requirements(conversation_id, requirements):
+def update_solution_requirements(thread_id, requirements):
     """
-    Update solution requirements during conversation.
+    Update solution requirements during conversation with retry logic.
     """
-    try:
-        laravel_url = os.getenv("LARAVEL_API_URL", "http://laravel-app-dev:8000")
+    laravel_url = os.getenv("LARAVEL_API_URL", "http://laravel-app-dev:8000")
 
-        # First, get the solution ID for this conversation
-        response = requests.get(
-            f"{laravel_url}/api/internal/conversations/{conversation_id}",
-            timeout=5
-        )
+    # Retry logic for getting conversation
+    max_retries = 3
+    timeouts = [30, 45, 60]
 
-        if response.status_code != 200:
-            print(f"Failed to find conversation: {response.status_code}")
+    for attempt in range(max_retries):
+        try:
+            print(f"Updating solution requirements for thread {thread_id} (attempt {attempt + 1}/{max_retries}, length: {len(requirements)} chars)...")
+
+            # Get conversation with retry
+            response = requests.get(
+                f"{laravel_url}/api/internal/conversations/{thread_id}",
+                timeout=10
+            )
+
+            if response.status_code != 200:
+                print(f"Failed to find conversation: {response.status_code}")
+                if attempt < max_retries - 1:
+                    time.sleep(2)
+                    continue
+                return None
+
+            conversation = response.json().get('data')
+            if not conversation:
+                print(f"Conversation not found: {conversation_id}")
+                return None
+
+            # Update requirements via conversation_id
+            payload = {
+                'conversation_id': conversation['id'],
+                'requirements': requirements,
+            }
+
+            response = requests.put(
+                f"{laravel_url}/api/internal/solutions/by-conversation",
+                json=payload,
+                timeout=timeouts[attempt]
+            )
+
+            if response.status_code == 200:
+                print(f"✓ Solution requirements updated successfully for conversation {conversation_id}")
+                return response.json().get('data')
+            else:
+                print(f"Failed to update solution requirements: {response.status_code} - {response.text}")
+                if attempt < max_retries - 1:
+                    time.sleep(2)
+                    continue
+                return None
+
+        except requests.exceptions.Timeout:
+            print(f"Timeout on attempt {attempt + 1}/{max_retries} (timeout: {timeouts[attempt]}s)")
+            if attempt < max_retries - 1:
+                time.sleep(2)
+                continue
+            print(f"✗ Failed to update solution requirements after {max_retries} attempts - TIMEOUT")
+            return None
+        except Exception as e:
+            print(f"Error updating solution requirements: {e}")
+            if attempt < max_retries - 1:
+                time.sleep(2)
+                continue
             return None
 
-        conversation = response.json().get('data')
-        if not conversation:
-            print(f"Conversation not found: {conversation_id}")
-            return None
+    return None
 
-        # Update requirements via conversation_id
-        payload = {
-            'conversation_id': conversation['id'],
-            'requirements': requirements,
-        }
-
-        response = requests.put(
-            f"{laravel_url}/api/internal/solutions/by-conversation",
-            json=payload,
-            timeout=10
-        )
-
-        if response.status_code == 200:
-            print(f"Solution requirements updated for conversation {conversation_id}")
-            return response.json().get('data')
-        else:
-            print(f"Failed to update solution requirements: {response.status_code} - {response.text}")
-            return None
-
-    except Exception as e:
-        print(f"Error updating solution requirements: {e}")
-        return None
-
-def update_solution_technical(conversation_id, technical_solution):
+def update_solution_technical(thread_id, technical_solution):
     """
-    Update solution technical solution during conversation.
+    Update solution technical solution during conversation with retry logic.
     """
-    try:
-        laravel_url = os.getenv("LARAVEL_API_URL", "http://laravel-app-dev:8000")
+    laravel_url = os.getenv("LARAVEL_API_URL", "http://laravel-app-dev:8000")
 
-        # First, get the solution ID for this conversation
-        response = requests.get(
-            f"{laravel_url}/api/internal/conversations/{conversation_id}",
-            timeout=5
-        )
+    # Retry logic
+    max_retries = 3
+    timeouts = [30, 45, 60]
 
-        if response.status_code != 200:
-            print(f"Failed to find conversation: {response.status_code}")
+    for attempt in range(max_retries):
+        try:
+            print(f"Updating technical solution for thread {thread_id} (attempt {attempt + 1}/{max_retries}, length: {len(technical_solution)} chars)...")
+
+            # Get conversation with retry
+            response = requests.get(
+                f"{laravel_url}/api/internal/conversations/{thread_id}",
+                timeout=10
+            )
+
+            if response.status_code != 200:
+                print(f"Failed to find conversation: {response.status_code}")
+                if attempt < max_retries - 1:
+                    time.sleep(2)
+                    continue
+                return None
+
+            conversation = response.json().get('data')
+            if not conversation:
+                print(f"Conversation not found: {conversation_id}")
+                return None
+
+            # Update technical solution via conversation_id
+            payload = {
+                'conversation_id': conversation['id'],
+                'technical_solution': technical_solution,
+            }
+
+            response = requests.put(
+                f"{laravel_url}/api/internal/solutions/by-conversation/technical",
+                json=payload,
+                timeout=timeouts[attempt]
+            )
+
+            if response.status_code == 200:
+                print(f"✓ Technical solution updated successfully for conversation {conversation_id}")
+                return response.json().get('data')
+            else:
+                print(f"Failed to update technical solution: {response.status_code} - {response.text}")
+                if attempt < max_retries - 1:
+                    time.sleep(2)
+                    continue
+                return None
+
+        except requests.exceptions.Timeout:
+            print(f"Timeout on attempt {attempt + 1}/{max_retries} (timeout: {timeouts[attempt]}s)")
+            if attempt < max_retries - 1:
+                time.sleep(2)
+                continue
+            print(f"✗ Failed to update technical solution after {max_retries} attempts - TIMEOUT")
+            return None
+        except Exception as e:
+            print(f"Error updating technical solution: {e}")
+            if attempt < max_retries - 1:
+                time.sleep(2)
+                continue
             return None
 
-        conversation = response.json().get('data')
-        if not conversation:
-            print(f"Conversation not found: {conversation_id}")
-            return None
-
-        # Update technical solution via conversation_id
-        payload = {
-            'conversation_id': conversation['id'],
-            'technical_solution': technical_solution,
-        }
-
-        response = requests.put(
-            f"{laravel_url}/api/internal/solutions/by-conversation/technical",
-            json=payload,
-            timeout=10
-        )
-
-        if response.status_code == 200:
-            print(f"Solution technical solution updated for conversation {conversation_id}")
-            return response.json().get('data')
-        else:
-            print(f"Failed to update technical solution: {response.status_code} - {response.text}")
-            return None
-
-    except Exception as e:
-        print(f"Error updating technical solution: {e}")
-        return None
+    return None

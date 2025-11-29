@@ -34,7 +34,7 @@ def save_requirements(requirements: str, thread_id: str = None):
             # Get conversation ID from thread_id
             response = requests.get(
                 f"{laravel_url}/api/internal/conversations/{thread_id}",
-                timeout=5
+                timeout=10
             )
             if response.status_code == 200:
                 conversation = response.json().get('data')
@@ -74,7 +74,7 @@ def save_solution(solution: str, thread_id: str = None):
             # Get conversation ID from thread_id
             response = requests.get(
                 f"{laravel_url}/api/internal/conversations/{thread_id}",
-                timeout=5
+                timeout=10
             )
             if response.status_code == 200:
                 conversation = response.json().get('data')

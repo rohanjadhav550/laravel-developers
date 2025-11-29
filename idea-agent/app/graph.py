@@ -170,11 +170,14 @@ workflow.add_conditional_edges(
     }
 )
 
-# Use MemorySaver for conversation persistence within the session
-# Messages are stored in memory (will persist while container is running)
-# Conversation metadata is still saved to MySQL database
-# TODO: Switch to RedisSaver for persistence across container restarts
-from langgraph.checkpoint.memory import MemorySaver
+# Use RedisSaver for persistent conversation storage across restarts
+from langgraph.checkpoint.redis import RedisSaver
 
-checkpointer = MemorySaver()
+# Initialize RedisSaver with Redis connection string
+redis_url = os.getenv("REDIS_URL", "redis://redis:6379")
+checkpointer = RedisSaver(redis_url)
+
+# Ensure Redis Search indices are created
+checkpointer.setup()
+
 app_graph = workflow.compile(checkpointer=checkpointer)

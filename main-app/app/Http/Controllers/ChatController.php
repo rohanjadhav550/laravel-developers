@@ -53,7 +53,7 @@ class ChatController extends Controller
                 'user_id' => auth()->id(),
             ]);
 
-            $response = Http::timeout(60)->post("{$agentUrl}/ask", $payload);
+            $response = Http::timeout(300)->post("{$agentUrl}/ask", $payload);
 
             if ($response->successful()) {
                 $data = $response->json();
