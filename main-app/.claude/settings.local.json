@@ -12,7 +12,9 @@
       "mcp__playwright__browser_type",
       "mcp__playwright__browser_snapshot",
       "mcp__playwright__browser_click",
-      "mcp__playwright__browser_wait_for"
+      "mcp__playwright__browser_wait_for",
+      "mcp__playwright__browser_fill_form",
+      "Bash(php artisan tinker:*)"
     ]
   },
   "enableAllProjectMcpServers": true,

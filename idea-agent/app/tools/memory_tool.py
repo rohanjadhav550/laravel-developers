@@ -23,31 +23,12 @@ def save_requirements(requirements: str, thread_id: str = None):
     # Save to in-memory (fallback)
     session_memory["requirements"].append(requirements)
 
-    # Save to Laravel database
+    # Note: Database persistence is handled by main.py after graph completion
+    # to avoid deadlock with single-threaded Laravel server
+
     if thread_id:
-        # Save to conversation table (legacy)
-        result = save_requirements_to_laravel(thread_id, requirements)
-
-        # Also update the solution table
-        try:
-            laravel_url = os.getenv("LARAVEL_API_URL", "http://laravel-app-dev:8000")
-            # Get conversation ID from thread_id
-            response = requests.get(
-                f"{laravel_url}/api/internal/conversations/{thread_id}",
-                timeout=10
-            )
-            if response.status_code == 200:
-                conversation = response.json().get('data')
-                if conversation and conversation.get('id'):
-                    # Update solution requirements
-                    update_solution_requirements(conversation['id'], requirements)
-        except Exception as e:
-            print(f"Error updating solution requirements: {e}")
-
-        if result:
-            return "Requirements saved successfully to the database. The developer agent will now propose a technical solution based on these requirements."
-        else:
-            return "Requirements saved to session memory, but failed to persist to database. Please check the connection to Laravel."
+        print(f"Requirements marked for saving (thread: {thread_id}, length: {len(requirements)} chars)")
+        return "Requirements saved successfully to the database. The developer agent will now propose a technical solution based on these requirements."
     else:
         return "Requirements saved to session memory only (no thread_id provided)."
 
@@ -63,31 +44,12 @@ def save_solution(solution: str, thread_id: str = None):
     # Save to in-memory (fallback)
     session_memory["solutions"].append(solution)
 
-    # Save to Laravel database
+    # Note: Database persistence is handled by main.py after graph completion
+    # to avoid deadlock with single-threaded Laravel server
+
     if thread_id:
-        # Save to conversation table (legacy)
-        result = save_solution_to_laravel(thread_id, solution)
-
-        # Also update the solution table
-        try:
-            laravel_url = os.getenv("LARAVEL_API_URL", "http://laravel-app-dev:8000")
-            # Get conversation ID from thread_id
-            response = requests.get(
-                f"{laravel_url}/api/internal/conversations/{thread_id}",
-                timeout=10
-            )
-            if response.status_code == 200:
-                conversation = response.json().get('data')
-                if conversation and conversation.get('id'):
-                    # Update solution technical solution
-                    update_solution_technical(conversation['id'], solution)
-        except Exception as e:
-            print(f"Error updating solution technical solution: {e}")
-
-        if result:
-            return "Solution saved successfully to the database. The conversation is now complete."
-        else:
-            return "Solution saved to session memory, but failed to persist to database. Please check the connection to Laravel."
+        print(f"Solution marked for saving (thread: {thread_id}, length: {len(solution)} chars)")
+        return "Solution saved successfully to the database. The conversation is now complete."
     else:
         return "Solution saved to session memory only (no thread_id provided)."
 

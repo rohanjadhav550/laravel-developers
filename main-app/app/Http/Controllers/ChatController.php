@@ -6,6 +6,8 @@ use App\Models\Project;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use App\Models\Conversation;
+use App\Models\Solution;
 
 class ChatController extends Controller
 {
@@ -62,6 +64,58 @@ class ChatController extends Controller
                     'thread_id' => $data['thread_id'] ?? null,
                     'status' => $data['status'] ?? 'unknown',
                 ]);
+
+                // Handle persistence of requirements and solution if returned by agent
+                // This avoids deadlock issues with single-threaded PHP server
+                if (!empty($data['requirements']) || !empty($data['solution'])) {
+                    $responseThreadId = $data['thread_id'] ?? null;
+                    if ($responseThreadId) {
+                        $conversation = Conversation::where('thread_id', $responseThreadId)->first();
+                        if ($conversation) {
+                            if (!empty($data['requirements'])) {
+                                $conversation->update(['requirements' => $data['requirements']]);
+                                // Also update solution status if exists, or create it
+                                $solution = Solution::where('conversation_id', $conversation->id)->first();
+                                if ($solution) {
+                                    $solution->update([
+                                        'requirements' => $data['requirements'],
+                                        'status' => 'requirement_ready'
+                                    ]);
+                                } else {
+                                    Solution::create([
+                                        'conversation_id' => $conversation->id,
+                                        'user_id' => auth()->id(),
+                                        'project_id' => $project->id,
+                                        'title' => $conversation->title ?? 'New Solution',
+                                        'status' => 'requirement_ready',
+                                        'requirements' => $data['requirements']
+                                    ]);
+                                }
+                            }
+                            
+                            if (!empty($data['solution'])) {
+                                $conversation->update(['solution' => $data['solution']]);
+                                // Also update solution technical solution, or create it
+                                $solution = Solution::where('conversation_id', $conversation->id)->first();
+                                if ($solution) {
+                                    $solution->update([
+                                        'technical_solution' => $data['solution'],
+                                        'status' => 'solution_ready'
+                                    ]);
+                                } else {
+                                    Solution::create([
+                                        'conversation_id' => $conversation->id,
+                                        'user_id' => auth()->id(),
+                                        'project_id' => $project->id,
+                                        'title' => $conversation->title ?? 'New Solution',
+                                        'status' => 'solution_ready',
+                                        'technical_solution' => $data['solution']
+                                    ]);
+                                }
+                            }
+                        }
+                    }
+                }
 
                 return response()->json([
                     'success' => true,

@@ -2,7 +2,7 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from app.graph import app_graph
 from app.database import save_conversation_metadata, create_solution
-from langchain_core.messages import HumanMessage
+from langchain_core.messages import HumanMessage, AIMessage, ToolMessage
 import uuid
 
 app = FastAPI()
@@ -38,6 +38,25 @@ def ask_question(q: Question):
             "ai_api_key": q.ai_api_key,
         }
     }
+
+    # Self-healing: Check for dangling tool calls in the state
+    # This fixes "BadRequestError: An assistant message with 'tool_calls' must be followed by tool messages"
+    try:
+        current_state = app_graph.get_state(config)
+        if current_state.values and current_state.values.get('messages'):
+            last_msg = current_state.values['messages'][-1]
+            if isinstance(last_msg, AIMessage) and hasattr(last_msg, 'tool_calls') and last_msg.tool_calls:
+                print(f"Found dangling tool call in thread {thread_id}. Injecting dummy ToolMessage to fix state.")
+                # Inject a ToolMessage to fix the history
+                for tool_call in last_msg.tool_calls:
+                    tool_msg = ToolMessage(
+                        tool_call_id=tool_call['id'],
+                        content="Tool execution failed or timed out previously. Resuming conversation.",
+                        name=tool_call['name']
+                    )
+                    app_graph.update_state(config, {"messages": [tool_msg]})
+    except Exception as e:
+        print(f"Error checking/fixing state: {e}")
 
     # Create input message
     inputs = {"messages": [HumanMessage(content=q.question)]}
@@ -79,6 +98,26 @@ def ask_question(q: Question):
                 project_id=q.project_id
             )
 
+        # Extract requirements/solution from tool calls to return to Laravel
+        # This avoids deadlock by letting Laravel handle the persistence
+        requirements_data = None
+        solution_data = None
+        
+        for msg in result['messages']:
+            # Check if this is an AIMessage with tool calls
+            if hasattr(msg, 'tool_calls') and msg.tool_calls:
+                for tool_call in msg.tool_calls:
+                    tool_name = tool_call.get('name')
+                    tool_args = tool_call.get('args', {})
+                    
+                    # Capture requirements if save_requirements was called
+                    if tool_name == 'save_requirements' and 'requirements' in tool_args:
+                        requirements_data = tool_args['requirements']
+                    
+                    # Capture solution if save_solution was called
+                    elif tool_name == 'save_solution' and 'solution' in tool_args:
+                        solution_data = tool_args['solution']
+
         # Determine if the conversation has ended or is waiting for more input
         # The graph returns END when it needs user input
         status = "completed"
@@ -87,7 +126,9 @@ def ask_question(q: Question):
             "response": last_message.content,
             "thread_id": thread_id,
             "status": status,
-            "message_count": message_count
+            "message_count": message_count,
+            "requirements": requirements_data,
+            "solution": solution_data
         }
     except ValueError as e:
         # Handle configuration errors (missing API keys, etc.)
