@@ -108,40 +108,59 @@ def get_llm_config(user_id=2, ai_provider=None, ai_api_key=None):
 
 def save_conversation_metadata(user_id, thread_id, title=None, message_count=None, project_id=None):
     """
-    Save or update conversation metadata in Laravel's MySQL database.
+    Save or update conversation metadata in Laravel's MySQL database with retry logic.
     The actual conversation messages are stored in Redis via LangGraph's RedisSaver.
     """
-    try:
-        laravel_url = os.getenv("LARAVEL_API_URL", "http://laravel-app-dev:8000")
+    laravel_url = os.getenv("LARAVEL_API_URL", "http://laravel-app-dev:8000")
 
-        payload = {
-            'user_id': user_id,
-            'thread_id': thread_id,
-        }
+    payload = {
+        'user_id': user_id,
+        'thread_id': thread_id,
+    }
 
-        if title:
-            payload['title'] = title
-        if message_count is not None:
-            payload['message_count'] = message_count
-        if project_id:
-            payload['project_id'] = project_id
+    if title:
+        payload['title'] = title
+    if message_count is not None:
+        payload['message_count'] = message_count
+    if project_id:
+        payload['project_id'] = project_id
 
-        response = requests.post(
-            f"{laravel_url}/api/internal/conversations",
-            json=payload,
-            timeout=5
-        )
+    # Retry with increasing timeouts (10s, 15s, 20s)
+    max_retries = 3
+    timeouts = [10, 15, 20]
 
-        if response.status_code == 200:
-            print(f"Conversation metadata saved: {thread_id}")
-            return response.json().get('data')
-        else:
-            print(f"Failed to save conversation metadata: {response.status_code}")
+    for attempt in range(max_retries):
+        try:
+            response = requests.post(
+                f"{laravel_url}/api/internal/conversations",
+                json=payload,
+                timeout=timeouts[attempt]
+            )
+
+            if response.status_code == 200:
+                print(f"Conversation metadata saved: {thread_id}")
+                return response.json().get('data')
+            else:
+                print(f"Failed to save conversation metadata: {response.status_code}")
+                if attempt < max_retries - 1:
+                    time.sleep(1)
+                    continue
+                return None
+
+        except requests.exceptions.Timeout:
+            print(f"Timeout saving conversation metadata on attempt {attempt + 1}/{max_retries} (timeout: {timeouts[attempt]}s)")
+            if attempt < max_retries - 1:
+                time.sleep(1)
+                continue
+            return None
+        except Exception as e:
+            print(f"Error saving conversation metadata: {e}")
+            if attempt < max_retries - 1:
+                time.sleep(1)
+                continue
             return None
 
-    except Exception as e:
-        print(f"Error saving conversation metadata: {e}")
-        return None
+    return None
 
 def save_requirements_to_laravel(thread_id, requirements):
     """

@@ -65,27 +65,45 @@ def tool_node(state: AgentState, config: RunnableConfig):
     last_message = messages[-1]
 
     if isinstance(last_message, AIMessage) and last_message.tool_calls:
-        tool_call = last_message.tool_calls[0]
-        tool_name = tool_call['name']
-        tool_args = tool_call['args']
-        tool_call_id = tool_call['id']
-
         # Get thread_id from config
         thread_id = config.get("configurable", {}).get("thread_id")
 
-        if tool_name == 'save_requirements':
-            # Add thread_id to tool args
-            tool_args['thread_id'] = thread_id
-            result = save_requirements.invoke(tool_args)
-            return {"messages": [ToolMessage(content=str(result), tool_call_id=tool_call_id)], "next_step": "developer"}
-        elif tool_name == 'save_solution':
-            # Add thread_id to tool args
-            tool_args['thread_id'] = thread_id
-            result = save_solution.invoke(tool_args)
-            return {"messages": [ToolMessage(content=str(result), tool_call_id=tool_call_id)], "next_step": "end"}
-        elif tool_name == 'search_knowledge_base':
-            result = search_knowledge_base.invoke(tool_args)
-            return {"messages": [ToolMessage(content=str(result), tool_call_id=tool_call_id)], "next_step": "developer"}
+        # Process ALL tool calls, not just the first one
+        tool_messages = []
+        next_step = None
+
+        for tool_call in last_message.tool_calls:
+            tool_name = tool_call['name']
+            tool_args = tool_call['args']
+            tool_call_id = tool_call['id']
+
+            if tool_name == 'save_requirements':
+                # Add thread_id to tool args
+                tool_args['thread_id'] = thread_id
+                result = save_requirements.invoke(tool_args)
+                tool_messages.append(ToolMessage(content=str(result), tool_call_id=tool_call_id))
+                next_step = "developer"
+            elif tool_name == 'save_solution':
+                # Add thread_id to tool args
+                tool_args['thread_id'] = thread_id
+                result = save_solution.invoke(tool_args)
+                tool_messages.append(ToolMessage(content=str(result), tool_call_id=tool_call_id))
+                next_step = "end"
+            elif tool_name == 'search_knowledge_base':
+                result = search_knowledge_base.invoke(tool_args)
+                tool_messages.append(ToolMessage(content=str(result), tool_call_id=tool_call_id))
+                if next_step is None:  # Don't override if already set
+                    next_step = "developer"
+            else:
+                # Handle unknown tools with an error message
+                tool_messages.append(
+                    ToolMessage(
+                        content=f"Error: Unknown tool '{tool_name}'",
+                        tool_call_id=tool_call_id
+                    )
+                )
+
+        return {"messages": tool_messages, "next_step": next_step}
 
     return {"messages": []}
 

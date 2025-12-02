@@ -44,17 +44,44 @@ def ask_question(q: Question):
     try:
         current_state = app_graph.get_state(config)
         if current_state.values and current_state.values.get('messages'):
-            last_msg = current_state.values['messages'][-1]
-            if isinstance(last_msg, AIMessage) and hasattr(last_msg, 'tool_calls') and last_msg.tool_calls:
-                print(f"Found dangling tool call in thread {thread_id}. Injecting dummy ToolMessage to fix state.")
-                # Inject a ToolMessage to fix the history
-                for tool_call in last_msg.tool_calls:
-                    tool_msg = ToolMessage(
-                        tool_call_id=tool_call['id'],
-                        content="Tool execution failed or timed out previously. Resuming conversation.",
-                        name=tool_call['name']
-                    )
-                    app_graph.update_state(config, {"messages": [tool_msg]})
+            messages = current_state.values['messages']
+            # Look for AIMessage with tool_calls that don't have corresponding ToolMessages
+            for i in range(len(messages) - 1, -1, -1):
+                msg = messages[i]
+                if isinstance(msg, AIMessage) and hasattr(msg, 'tool_calls') and msg.tool_calls:
+                    # Check if the next messages contain responses for all tool calls
+                    tool_call_ids = {tc['id'] for tc in msg.tool_calls}
+
+                    # Look ahead to find ToolMessages that respond to these calls
+                    responded_ids = set()
+                    for j in range(i + 1, len(messages)):
+                        if isinstance(messages[j], ToolMessage):
+                            responded_ids.add(messages[j].tool_call_id)
+                        elif isinstance(messages[j], (AIMessage, HumanMessage)):
+                            # Stop looking if we hit another AI or Human message
+                            break
+
+                    # Find missing responses
+                    missing_ids = tool_call_ids - responded_ids
+
+                    if missing_ids:
+                        print(f"Found {len(missing_ids)} dangling tool calls in thread {thread_id}. Injecting ToolMessages to fix state.")
+                        # Inject ToolMessages for all missing tool calls
+                        tool_messages = []
+                        for tool_call in msg.tool_calls:
+                            if tool_call['id'] in missing_ids:
+                                tool_msg = ToolMessage(
+                                    tool_call_id=tool_call['id'],
+                                    content="Tool execution failed or timed out previously. Resuming conversation.",
+                                    name=tool_call.get('name', 'unknown_tool')
+                                )
+                                tool_messages.append(tool_msg)
+
+                        if tool_messages:
+                            app_graph.update_state(config, {"messages": tool_messages})
+
+                    # Only check the most recent AIMessage with tool_calls
+                    break
     except Exception as e:
         print(f"Error checking/fixing state: {e}")
 
