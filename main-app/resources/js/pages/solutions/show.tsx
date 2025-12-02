@@ -10,6 +10,10 @@ import { Head, Link, router } from '@inertiajs/react';
 import { CheckCircle, Clock, Code, FileText, Lightbulb, XCircle, Calendar, Loader2, Sparkles, RefreshCw, AlertCircle } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import axios from 'axios';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import rehypeRaw from 'rehype-raw';
+import rehypeSanitize from 'rehype-sanitize';
 
 interface Solution {
     id: number;
@@ -134,9 +138,16 @@ export default function SolutionShow({ solution: initialSolution, project }: Sol
                 setProgress(progressData);
 
                 // Stop polling if completed or failed
-                if (progressData.status === 'completed' || progressData.status === 'failed') {
+                if (progressData.status === 'completed') {
                     stopPolling();
-                    // Reload page to get updated solution
+                    setProgress(null);
+                    setIsPublishing(false);
+                    // Full page reload to show the technical solution
+                    window.location.reload();
+                } else if (progressData.status === 'failed') {
+                    stopPolling();
+                    setIsPublishing(false);
+                    // Reload page to get updated solution status
                     router.reload({ only: ['solution'] });
                 }
             } catch (error) {
@@ -383,8 +394,13 @@ export default function SolutionShow({ solution: initialSolution, project }: Sol
                             </div>
                         </CardHeader>
                         <CardContent>
-                            <div className="prose prose-sm dark:prose-invert max-w-none whitespace-pre-wrap">
-                                {solution.requirements}
+                            <div className="prose prose-sm dark:prose-invert max-w-none">
+                                <ReactMarkdown
+                                    remarkPlugins={[remarkGfm]}
+                                    rehypePlugins={[rehypeRaw, rehypeSanitize]}
+                                >
+                                    {solution.requirements}
+                                </ReactMarkdown>
                             </div>
                         </CardContent>
                     </Card>
@@ -420,8 +436,13 @@ export default function SolutionShow({ solution: initialSolution, project }: Sol
                             </div>
                         </CardHeader>
                         <CardContent>
-                            <div className="prose prose-sm dark:prose-invert max-w-none whitespace-pre-wrap">
-                                {solution.technical_solution}
+                            <div className="prose prose-sm dark:prose-invert max-w-none">
+                                <ReactMarkdown
+                                    remarkPlugins={[remarkGfm]}
+                                    rehypePlugins={[rehypeRaw, rehypeSanitize]}
+                                >
+                                    {solution.technical_solution}
+                                </ReactMarkdown>
                             </div>
                         </CardContent>
                     </Card>

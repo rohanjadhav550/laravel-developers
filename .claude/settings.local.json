@@ -17,7 +17,9 @@
       "mcp__playwright__browser_console_messages",
       "mcp__playwright__browser_press_key",
       "mcp__playwright__browser_run_code",
-      "mcp__playwright__browser_take_screenshot"
+      "mcp__playwright__browser_take_screenshot",
+      "Bash(npm install:*)",
+      "mcp__playwright__browser_handle_dialog"
     ],
     "deny": [],
     "ask": []
