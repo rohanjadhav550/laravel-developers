@@ -1,11 +1,15 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Progress } from '@/components/ui/progress';
 import BackButton from '@/components/back-button';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem, type Project } from '@/types';
 import { Head, Link, router } from '@inertiajs/react';
-import { CheckCircle, Clock, Code, FileText, Lightbulb, XCircle, Calendar } from 'lucide-react';
+import { CheckCircle, Clock, Code, FileText, Lightbulb, XCircle, Calendar, Loader2, Sparkles, RefreshCw, AlertCircle } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import axios from 'axios';
 
 interface Solution {
     id: number;
@@ -16,7 +20,7 @@ interface Solution {
     description: string | null;
     requirements: string | null;
     technical_solution: string | null;
-    status: 'draft' | 'in_progress' | 'requirement_ready' | 'solution_ready' | 'approved' | 'rejected' | 'completed';
+    status: 'draft' | 'in_progress' | 'requirement_ready' | 'solution_ready' | 'approved' | 'rejected' | 'completed' | 'generating_solution' | 'generation_failed';
     requirement_approved_at: string | null;
     solution_approved_at: string | null;
     created_at: string;
@@ -29,6 +33,12 @@ interface Solution {
 interface SolutionShowProps {
     solution: Solution;
     project: Project;
+}
+
+interface GenerationProgress {
+    status: 'idle' | 'starting' | 'analyzing' | 'generating' | 'saving' | 'completed' | 'failed';
+    progress: number;
+    message: string;
 }
 
 const statusConfig: Record<string, { label: string; color: string; icon: any }> = {
@@ -52,6 +62,16 @@ const statusConfig: Record<string, { label: string; color: string; icon: any }> 
         color: 'bg-purple-500/10 text-purple-700 dark:text-purple-400',
         icon: Code,
     },
+    generating_solution: {
+        label: 'Generating Solution',
+        color: 'bg-indigo-500/10 text-indigo-700 dark:text-indigo-400',
+        icon: Loader2,
+    },
+    generation_failed: {
+        label: 'Generation Failed',
+        color: 'bg-red-500/10 text-red-700 dark:text-red-400',
+        icon: AlertCircle,
+    },
     approved: {
         label: 'Approved',
         color: 'bg-green-500/10 text-green-700 dark:text-green-400',
@@ -69,7 +89,12 @@ const statusConfig: Record<string, { label: string; color: string; icon: any }> 
     },
 };
 
-export default function SolutionShow({ solution, project }: SolutionShowProps) {
+export default function SolutionShow({ solution: initialSolution, project }: SolutionShowProps) {
+    const [solution, setSolution] = useState(initialSolution);
+    const [isPublishing, setIsPublishing] = useState(false);
+    const [progress, setProgress] = useState<GenerationProgress | null>(null);
+    const [pollInterval, setPollInterval] = useState<NodeJS.Timeout | null>(null);
+
     const breadcrumbs: BreadcrumbItem[] = [
         {
             title: project?.name || 'Project',
@@ -98,6 +123,90 @@ export default function SolutionShow({ solution, project }: SolutionShowProps) {
         });
     };
 
+    // Poll for progress updates
+    const startPolling = () => {
+        const interval = setInterval(async () => {
+            try {
+                const response = await axios.get(
+                    `/projects/${project?.slug}/solutions/${solution.id}/progress`
+                );
+                const progressData = response.data as GenerationProgress;
+                setProgress(progressData);
+
+                // Stop polling if completed or failed
+                if (progressData.status === 'completed' || progressData.status === 'failed') {
+                    stopPolling();
+                    // Reload page to get updated solution
+                    router.reload({ only: ['solution'] });
+                }
+            } catch (error) {
+                console.error('Error fetching progress:', error);
+            }
+        }, 2000); // Poll every 2 seconds
+
+        setPollInterval(interval);
+    };
+
+    const stopPolling = () => {
+        if (pollInterval) {
+            clearInterval(pollInterval);
+            setPollInterval(null);
+        }
+    };
+
+    // Cleanup on unmount
+    useEffect(() => {
+        return () => stopPolling();
+    }, []);
+
+    const handlePublish = async () => {
+        try {
+            setIsPublishing(true);
+            const response = await axios.post(
+                `/projects/${project?.slug}/solutions/${solution.id}/publish`
+            );
+
+            if (response.data.success) {
+                setProgress({
+                    status: 'starting',
+                    progress: 0,
+                    message: 'Initializing...'
+                });
+                startPolling();
+            }
+        } catch (error: any) {
+            console.error('Error publishing solution:', error);
+            alert(error.response?.data?.message || 'Failed to publish solution');
+            setIsPublishing(false);
+        }
+    };
+
+    const handleRepublish = async () => {
+        if (!confirm('Are you sure you want to regenerate the technical solution? This will overwrite the existing solution.')) {
+            return;
+        }
+
+        try {
+            setIsPublishing(true);
+            const response = await axios.post(
+                `/projects/${project?.slug}/solutions/${solution.id}/republish`
+            );
+
+            if (response.data.success) {
+                setProgress({
+                    status: 'starting',
+                    progress: 0,
+                    message: 'Initializing regeneration...'
+                });
+                startPolling();
+            }
+        } catch (error: any) {
+            console.error('Error republishing solution:', error);
+            alert(error.response?.data?.message || 'Failed to republish solution');
+            setIsPublishing(false);
+        }
+    };
+
     const handleApproveRequirements = () => {
         router.post(`/projects/${project?.slug || 'unknown'}/solutions/${solution.id}/approve-requirements`, {}, {
             preserveScroll: true,
@@ -109,6 +218,10 @@ export default function SolutionShow({ solution, project }: SolutionShowProps) {
             preserveScroll: true,
         });
     };
+
+    const isGenerating = isPublishing || solution.status === 'generating_solution' || (progress && ['starting', 'analyzing', 'generating', 'saving'].includes(progress.status));
+    const hasRequirements = !!solution.requirements;
+    const hasSolution = !!solution.technical_solution;
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -126,7 +239,10 @@ export default function SolutionShow({ solution, project }: SolutionShowProps) {
                                 variant="secondary"
                                 className={statusConfig[solution.status]?.color || 'bg-gray-500/10'}
                             >
-                                <StatusIcon className="mr-1 h-3 w-3" />
+                                {solution.status === 'generating_solution' && (
+                                    <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                                )}
+                                {solution.status !== 'generating_solution' && <StatusIcon className="mr-1 h-3 w-3" />}
                                 {statusConfig[solution.status]?.label || solution.status}
                             </Badge>
                         </div>
@@ -155,6 +271,45 @@ export default function SolutionShow({ solution, project }: SolutionShowProps) {
                         </Button>
                     </div>
                 </div>
+
+                {/* Generation Progress Alert */}
+                {isGenerating && progress && (
+                    <Alert className="border-indigo-500/50 bg-indigo-500/10">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        <AlertTitle>Generating Technical Solution</AlertTitle>
+                        <AlertDescription className="mt-2 space-y-3">
+                            <p className="text-sm">{progress.message}</p>
+                            <div className="space-y-2">
+                                <Progress value={progress.progress} className="h-2" />
+                                <p className="text-xs text-muted-foreground">
+                                    {progress.progress}% complete • This may take 2-5 minutes
+                                </p>
+                            </div>
+                            <div className="flex items-start gap-2 rounded-md bg-background/50 p-3 text-xs">
+                                <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-indigo-500" />
+                                <div className="space-y-1">
+                                    <p className="font-medium">Using Intelligent AI Model</p>
+                                    <p className="text-muted-foreground">
+                                        Our AI is performing deep analysis and generating a comprehensive
+                                        50+ page A-Z implementation guide with complete code structures,
+                                        database schemas, security measures, and deployment strategies.
+                                    </p>
+                                </div>
+                            </div>
+                        </AlertDescription>
+                    </Alert>
+                )}
+
+                {/* Generation Failed Alert */}
+                {solution.status === 'generation_failed' && (
+                    <Alert variant="destructive">
+                        <AlertCircle className="h-4 w-4" />
+                        <AlertTitle>Generation Failed</AlertTitle>
+                        <AlertDescription>
+                            Failed to generate technical solution. Please try again or contact support if the issue persists.
+                        </AlertDescription>
+                    </Alert>
+                )}
 
                 {/* Metadata */}
                 <Card>
@@ -197,16 +352,35 @@ export default function SolutionShow({ solution, project }: SolutionShowProps) {
                 </Card>
 
                 {/* Requirements */}
-                {solution.requirements && (
+                {hasRequirements && (
                     <Card>
                         <CardHeader>
-                            <CardTitle className="flex items-center gap-2">
-                                <FileText className="h-5 w-5" />
-                                Requirements
-                            </CardTitle>
-                            <CardDescription>
-                                Gathered requirements for this solution
-                            </CardDescription>
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <CardTitle className="flex items-center gap-2">
+                                        <FileText className="h-5 w-5" />
+                                        Requirements
+                                    </CardTitle>
+                                    <CardDescription>
+                                        Gathered requirements for this solution
+                                    </CardDescription>
+                                </div>
+                                {!hasSolution && !isGenerating && (
+                                    <Button onClick={handlePublish} size="lg" disabled={isGenerating}>
+                                        {isGenerating ? (
+                                            <>
+                                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                                Generating...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Sparkles className="mr-2 h-4 w-4" />
+                                                Publish Technical Solution
+                                            </>
+                                        )}
+                                    </Button>
+                                )}
+                            </div>
                         </CardHeader>
                         <CardContent>
                             <div className="prose prose-sm dark:prose-invert max-w-none whitespace-pre-wrap">
@@ -217,16 +391,33 @@ export default function SolutionShow({ solution, project }: SolutionShowProps) {
                 )}
 
                 {/* Technical Solution */}
-                {solution.technical_solution && (
+                {hasSolution && (
                     <Card>
                         <CardHeader>
-                            <CardTitle className="flex items-center gap-2">
-                                <Code className="h-5 w-5" />
-                                Technical Solution
-                            </CardTitle>
-                            <CardDescription>
-                                Proposed technical implementation
-                            </CardDescription>
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <CardTitle className="flex items-center gap-2">
+                                        <Code className="h-5 w-5" />
+                                        Technical Solution
+                                    </CardTitle>
+                                    <CardDescription>
+                                        Comprehensive A-Z implementation guide
+                                    </CardDescription>
+                                </div>
+                                <Button onClick={handleRepublish} variant="outline" disabled={isGenerating}>
+                                    {isGenerating ? (
+                                        <>
+                                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                            Regenerating...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <RefreshCw className="mr-2 h-4 w-4" />
+                                            Republish Solution
+                                        </>
+                                    )}
+                                </Button>
+                            </div>
                         </CardHeader>
                         <CardContent>
                             <div className="prose prose-sm dark:prose-invert max-w-none whitespace-pre-wrap">
@@ -237,7 +428,7 @@ export default function SolutionShow({ solution, project }: SolutionShowProps) {
                 )}
 
                 {/* No Content State */}
-                {!solution.requirements && !solution.technical_solution && (
+                {!hasRequirements && !hasSolution && (
                     <Card className="flex flex-col items-center justify-center p-12">
                         <Lightbulb className="mb-4 h-12 w-12 text-muted-foreground" />
                         <h3 className="mb-2 text-lg font-semibold">No details yet</h3>

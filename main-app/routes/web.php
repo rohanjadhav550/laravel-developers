@@ -45,6 +45,9 @@ Route::middleware(['auth'])->group(function () {
             Route::get('solutions/{solution}', [SolutionController::class, 'show'])->name('solutions.show');
             Route::post('solutions/{solution}/approve-requirements', [SolutionController::class, 'approveRequirements'])->name('solutions.approve-requirements');
             Route::post('solutions/{solution}/approve-solution', [SolutionController::class, 'approveSolution'])->name('solutions.approve-solution');
+            Route::post('solutions/{solution}/publish', [SolutionController::class, 'publish'])->name('solutions.publish');
+            Route::post('solutions/{solution}/republish', [SolutionController::class, 'republish'])->name('solutions.republish');
+            Route::get('solutions/{solution}/progress', [SolutionController::class, 'progress'])->name('solutions.progress');
 
             // Chat file upload
             Route::post('chat/upload', [\App\Http\Controllers\ChatFileController::class, 'upload'])->name('chat.file.upload');

@@ -98,4 +98,97 @@ class SolutionController extends Controller
 
         return redirect()->back()->with('success', 'Solution approved successfully.');
     }
+
+    /**
+     * Publish technical solution (trigger AI generation).
+     */
+    public function publish(Project $project, Solution $solution)
+    {
+        $this->authorize('update', $solution);
+
+        // Validate that requirements exist
+        if (empty($solution->requirements)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Requirements must be completed before publishing solution.'
+            ], 422);
+        }
+
+        // Check if already generating
+        $progressKey = "solution_generation_{$solution->id}";
+        $existingProgress = \Cache::get($progressKey);
+
+        if ($existingProgress && in_array($existingProgress['status'], ['starting', 'analyzing', 'generating', 'saving'])) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Solution generation is already in progress.'
+            ], 409);
+        }
+
+        // Dispatch job
+        \App\Jobs\GenerateTechnicalSolution::dispatch($solution, false);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Technical solution generation started. This may take 2-5 minutes.',
+            'solution_id' => $solution->id
+        ]);
+    }
+
+    /**
+     * Republish technical solution (regenerate).
+     */
+    public function republish(Project $project, Solution $solution)
+    {
+        $this->authorize('update', $solution);
+
+        // Validate that requirements exist
+        if (empty($solution->requirements)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Requirements must exist before republishing solution.'
+            ], 422);
+        }
+
+        // Check if already generating
+        $progressKey = "solution_generation_{$solution->id}";
+        $existingProgress = \Cache::get($progressKey);
+
+        if ($existingProgress && in_array($existingProgress['status'], ['starting', 'analyzing', 'generating', 'saving'])) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Solution generation is already in progress.'
+            ], 409);
+        }
+
+        // Dispatch job
+        \App\Jobs\GenerateTechnicalSolution::dispatch($solution, true);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Technical solution regeneration started. This may take 2-5 minutes.',
+            'solution_id' => $solution->id
+        ]);
+    }
+
+    /**
+     * Get solution generation progress.
+     */
+    public function progress(Project $project, Solution $solution)
+    {
+        $this->authorize('view', $solution);
+
+        $progressKey = "solution_generation_{$solution->id}";
+        $progress = \Cache::get($progressKey);
+
+        if (!$progress) {
+            return response()->json([
+                'status' => 'idle',
+                'progress' => 0,
+                'message' => 'No generation in progress'
+            ]);
+        }
+
+        return response()->json($progress);
+    }
 }

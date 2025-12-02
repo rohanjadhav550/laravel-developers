@@ -35,4 +35,8 @@ return [
         ],
     ],
 
+    'idea_agent' => [
+        'url' => env('IDEA_AGENT_URL', 'http://idea-agent:8000'),
+    ],
+
 ];

@@ -225,3 +225,157 @@ def get_conversation(thread_id: str):
         error_details = traceback.format_exc()
         print(f"Error retrieving conversation: {error_details}")
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/publish")
+async def publish_solution(request: dict):
+    """
+    MANUAL TRIGGER: Generate comprehensive technical solution document.
+
+    This endpoint is called when user clicks "Publish Solution" button in UI.
+    Uses intelligent thinking model for deep dive A-Z implementation guide.
+
+    Request body:
+    {
+        "thread_id": "uuid",
+        "requirements": "complete requirements markdown",
+        "user_id": 2,
+        "ai_provider": "OpenAI" | "Anthropic",
+        "ai_api_key": "key"
+    }
+    """
+    try:
+        from app.services.developer_service import generate_technical_solution
+        from app.database import save_solution_to_laravel
+
+        thread_id = request.get('thread_id')
+        requirements = request.get('requirements')
+        user_id = request.get('user_id', 2)
+        ai_provider = request.get('ai_provider')
+        ai_api_key = request.get('ai_api_key')
+
+        if not thread_id or not requirements:
+            raise HTTPException(
+                status_code=400,
+                detail="thread_id and requirements are required"
+            )
+
+        print(f"📝 Publishing solution for thread: {thread_id}")
+        print(f"📄 Requirements length: {len(requirements)} characters")
+
+        # Generate comprehensive technical solution
+        result = await generate_technical_solution(
+            thread_id=thread_id,
+            requirements=requirements,
+            user_id=user_id,
+            ai_provider=ai_provider,
+            ai_api_key=ai_api_key,
+            is_republish=False
+        )
+
+        # Save to Laravel database
+        technical_solution = result['technical_solution']
+        save_result = save_solution_to_laravel(thread_id, technical_solution)
+
+        if save_result:
+            print(f"✅ Solution saved to database for thread {thread_id}")
+        else:
+            print(f"⚠️ Failed to save solution to database")
+
+        return {
+            "success": True,
+            "message": "Technical solution generated successfully",
+            "thread_id": thread_id,
+            "solution": technical_solution,
+            "metadata": {
+                "model_used": result.get('model_used'),
+                "word_count": result.get('word_count'),
+                "char_count": result.get('char_count')
+            }
+        }
+
+    except ValueError as e:
+        error_message = str(e)
+        print(f"Configuration error: {error_message}")
+        raise HTTPException(status_code=400, detail=error_message)
+    except Exception as e:
+        import traceback
+        error_details = traceback.format_exc()
+        print(f"Error generating solution: {error_details}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/republish")
+async def republish_solution(request: dict):
+    """
+    MANUAL TRIGGER: Regenerate/improve technical solution document.
+
+    This endpoint is called when user clicks "Republish Solution" button in UI.
+    Regenerates the technical solution with potential improvements.
+
+    Request body:
+    {
+        "thread_id": "uuid",
+        "requirements": "complete requirements markdown",
+        "user_id": 2,
+        "ai_provider": "OpenAI" | "Anthropic",
+        "ai_api_key": "key"
+    }
+    """
+    try:
+        from app.services.developer_service import generate_technical_solution
+        from app.database import save_solution_to_laravel
+
+        thread_id = request.get('thread_id')
+        requirements = request.get('requirements')
+        user_id = request.get('user_id', 2)
+        ai_provider = request.get('ai_provider')
+        ai_api_key = request.get('ai_api_key')
+
+        if not thread_id or not requirements:
+            raise HTTPException(
+                status_code=400,
+                detail="thread_id and requirements are required"
+            )
+
+        print(f"🔄 Republishing solution for thread: {thread_id}")
+
+        # Regenerate technical solution
+        result = await generate_technical_solution(
+            thread_id=thread_id,
+            requirements=requirements,
+            user_id=user_id,
+            ai_provider=ai_provider,
+            ai_api_key=ai_api_key,
+            is_republish=True
+        )
+
+        # Save to Laravel database
+        technical_solution = result['technical_solution']
+        save_result = save_solution_to_laravel(thread_id, technical_solution)
+
+        if save_result:
+            print(f"✅ Solution updated in database for thread {thread_id}")
+        else:
+            print(f"⚠️ Failed to update solution in database")
+
+        return {
+            "success": True,
+            "message": "Technical solution regenerated successfully",
+            "thread_id": thread_id,
+            "solution": technical_solution,
+            "metadata": {
+                "model_used": result.get('model_used'),
+                "word_count": result.get('word_count'),
+                "char_count": result.get('char_count'),
+                "is_republish": True
+            }
+        }
+
+    except ValueError as e:
+        error_message = str(e)
+        print(f"Configuration error: {error_message}")
+        raise HTTPException(status_code=400, detail=error_message)
+    except Exception as e:
+        import traceback
+        error_details = traceback.format_exc()
+        print(f"Error regenerating solution: {error_details}")
+        raise HTTPException(status_code=500, detail=str(e))

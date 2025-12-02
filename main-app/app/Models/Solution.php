@@ -2,11 +2,13 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Solution extends Model
 {
+    use HasFactory;
     protected $fillable = [
         'conversation_id',
         'user_id',
@@ -18,11 +20,15 @@ class Solution extends Model
         'status',
         'requirement_approved_at',
         'solution_approved_at',
+        'generated_at',
+        'metadata',
     ];
 
     protected $casts = [
         'requirement_approved_at' => 'datetime',
         'solution_approved_at' => 'datetime',
+        'generated_at' => 'datetime',
+        'metadata' => 'array',
     ];
 
     /**
