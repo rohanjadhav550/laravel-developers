@@ -4,6 +4,7 @@ from langchain_core.messages import BaseMessage, HumanMessage, AIMessage, ToolMe
 from langchain_core.runnables import RunnableConfig
 from app.agents.requirement_agent import get_requirement_agent
 from app.tools.memory_tool import save_requirements
+from app.tools.rag_tool import search_knowledge_base
 from langchain_core.tools import Tool
 import operator
 import os
@@ -19,7 +20,15 @@ def requirement_node(state: AgentState, config: RunnableConfig):
     ai_provider = config.get("configurable", {}).get("ai_provider")
     ai_api_key = config.get("configurable", {}).get("ai_api_key")
 
-    agent = get_requirement_agent(user_id=user_id, ai_provider=ai_provider, ai_api_key=ai_api_key)
+    # Set agent type for KB integration
+    agent_type = "requirement_agent"
+
+    agent = get_requirement_agent(
+        user_id=user_id,
+        ai_provider=ai_provider,
+        ai_api_key=ai_api_key,
+        agent_type=agent_type
+    )
     messages = state['messages']
     response = agent.invoke(messages)
     return {"messages": [response], "current_agent": "requirement_agent"}
@@ -30,8 +39,9 @@ def tool_node(state: AgentState, config: RunnableConfig):
     last_message = messages[-1]
 
     if isinstance(last_message, AIMessage) and last_message.tool_calls:
-        # Get thread_id from config
+        # Get thread_id and current_agent from config/state
         thread_id = config.get("configurable", {}).get("thread_id")
+        current_agent = state.get('current_agent', 'requirement_agent')
 
         # Process ALL tool calls
         tool_messages = []
@@ -48,6 +58,11 @@ def tool_node(state: AgentState, config: RunnableConfig):
                 result = save_requirements.invoke(tool_args)
                 tool_messages.append(ToolMessage(content=str(result), tool_call_id=tool_call_id))
                 # Note: Developer agent will be triggered manually via separate endpoint
+            elif tool_name == 'search_knowledge_base':
+                # Inject agent_type for KB context
+                tool_args['agent_type'] = current_agent
+                result = search_knowledge_base.invoke(tool_args)
+                tool_messages.append(ToolMessage(content=str(result), tool_call_id=tool_call_id))
             else:
                 # Handle unknown tools with an error message
                 tool_messages.append(

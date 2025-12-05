@@ -19,7 +19,8 @@
       "mcp__playwright__browser_run_code",
       "mcp__playwright__browser_take_screenshot",
       "Bash(npm install:*)",
-      "mcp__playwright__browser_handle_dialog"
+      "mcp__playwright__browser_handle_dialog",
+      "Bash(docker exec:*)"
     ],
     "deny": [],
     "ask": []

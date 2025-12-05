@@ -20,7 +20,16 @@ def get_llm(user_id=2, ai_provider=None, ai_api_key=None):
 
     raise ValueError(f"Unsupported AI provider: {config['provider']}")
 
-def get_requirement_agent(user_id=2, ai_provider=None, ai_api_key=None):
+def get_requirement_agent(user_id=2, ai_provider=None, ai_api_key=None, agent_type="requirement_agent"):
+    """
+    Get requirement gathering agent.
+
+    Args:
+        user_id: User ID
+        ai_provider: AI provider (OpenAI or Anthropic)
+        ai_api_key: API key
+        agent_type: Agent type for KB context (default: requirement_agent)
+    """
     llm = get_llm(user_id=user_id, ai_provider=ai_provider, ai_api_key=ai_api_key)
     tools = [save_requirements]
 
