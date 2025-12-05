@@ -100,9 +100,7 @@ async def health_check():
 
 
 # Import and include routers
-from app.api import kb_routes, document_routes
+from app.api import kb_routes, document_routes, learned_knowledge_routes
 app.include_router(kb_routes.router, prefix="/api/kb", tags=["Knowledge Base"])
 app.include_router(document_routes.router, prefix="/api/kb", tags=["Documents"])
-# Learning routes will be added in Phase 3
-# from app.api import learning_routes
-# app.include_router(learning_routes.router, prefix="/api/learning", tags=["Self-Learning"])
+app.include_router(learned_knowledge_routes.router, prefix="/api/learning", tags=["Self-Learning"])

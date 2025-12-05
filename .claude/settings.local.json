@@ -20,7 +20,8 @@
       "mcp__playwright__browser_take_screenshot",
       "Bash(npm install:*)",
       "mcp__playwright__browser_handle_dialog",
-      "Bash(docker exec:*)"
+      "Bash(docker exec:*)",
+      "Bash(docker-compose build:*)"
     ],
     "deny": [],
     "ask": []

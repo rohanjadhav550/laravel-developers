@@ -4,8 +4,13 @@ from app.graph import app_graph
 from app.database import save_conversation_metadata, create_solution
 from langchain_core.messages import HumanMessage, AIMessage, ToolMessage
 import uuid
+import os
+import httpx
 
 app = FastAPI()
+
+# KB-Admin service URL for self-learning
+KB_ADMIN_URL = os.getenv("KB_ADMIN_URL", "http://kb-admin:8000")
 
 class Question(BaseModel):
     question: str
@@ -15,12 +20,57 @@ class Question(BaseModel):
     ai_provider: str = None  # OpenAI or Anthropic
     ai_api_key: str = None  # API key passed from Laravel
 
+
+async def capture_qa_pair(
+    question: str,
+    answer: str,
+    thread_id: str,
+    conversation_id: int = None,
+    agent_type: str = "requirement_agent",
+    confidence_score: float = 0.8
+):
+    """
+    Capture Q&A pair to kb-admin for review and learning.
+
+    This runs asynchronously and doesn't block the response to the user.
+    If capture fails, it logs the error but doesn't affect the conversation.
+    """
+    try:
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            payload = {
+                "agent_type": agent_type,
+                "knowledge_type": "qa_pair",
+                "source_thread_id": thread_id,
+                "source_conversation_id": conversation_id,
+                "question": question,
+                "answer": answer,
+                "context": {
+                    "captured_from": "idea_agent",
+                    "agent_type": agent_type
+                },
+                "confidence_score": confidence_score
+            }
+
+            response = await client.post(
+                f"{KB_ADMIN_URL}/api/learning/capture",
+                json=payload
+            )
+
+            if response.status_code == 201:
+                print(f"✅ Q&A pair captured for review (thread: {thread_id})")
+            else:
+                print(f"⚠️ Failed to capture Q&A: {response.status_code}")
+
+    except Exception as e:
+        # Log but don't fail - self-learning is optional
+        print(f"⚠️ Error capturing Q&A pair: {e}")
+
 @app.get("/")
 def read_root():
     return {"message": "Hello from Multi-Agent System!"}
 
 @app.post("/ask")
-def ask_question(q: Question):
+async def ask_question(q: Question):
     """
     Process a question through the multi-agent system.
     Conversation state is preserved using the thread_id.
@@ -148,6 +198,21 @@ def ask_question(q: Question):
         # Determine if the conversation has ended or is waiting for more input
         # The graph returns END when it needs user input
         status = "completed"
+
+        # Capture Q&A pair for self-learning (async, non-blocking)
+        # Only capture if it's a meaningful Q&A (not tool calls)
+        if last_message.content and not requirements_data and not solution_data:
+            conversation_id = conversation_data.get('id') if conversation_data else None
+            # Fire and forget - don't wait for completion
+            import asyncio
+            asyncio.create_task(capture_qa_pair(
+                question=q.question,
+                answer=last_message.content,
+                thread_id=thread_id,
+                conversation_id=conversation_id,
+                agent_type="requirement_agent",
+                confidence_score=0.8
+            ))
 
         return {
             "response": last_message.content,
