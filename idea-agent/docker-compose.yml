@@ -20,6 +20,7 @@ services:
       - DB_PASSWORD=rootsecret
       - DB_DATABASE=laravel
       - LARAVEL_API_URL=http://laravel-app-dev:8000
+      - KB_ADMIN_URL=http://kb-admin:8000
 
   redis:
     image: redis/redis-stack:latest

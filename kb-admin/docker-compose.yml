@@ -1,0 +1,64 @@
+services:
+  kb-admin:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: kb-admin
+    ports:
+      - "8002:8000"
+    volumes:
+      - .:/app
+    networks:
+      - laravel-microservices
+    restart: unless-stopped
+    environment:
+      - REDIS_URL=redis://redis-vector-db:6379
+      - DB_HOST=mysql
+      - DB_USERNAME=root
+      - DB_PASSWORD=rootsecret
+      - DB_DATABASE=laravel
+      - LARAVEL_API_URL=http://laravel-app-dev:8000
+      - IDEA_AGENT_URL=http://idea-agent:8000
+
+  # Note: Redis and MySQL are shared from other compose files
+  # They should already be running on the laravel-microservices network
+  # Make sure to start idea-agent (for Redis) and main-app (for MySQL) first
+
+  # Optional: If you want to run standalone for development with own Redis/MySQL
+  redis:
+    image: redis/redis-stack:latest
+    container_name: redis-vector-db
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - laravel-microservices
+    restart: unless-stopped
+    profiles:
+      - standalone
+
+  mysql:
+    image: mysql:8.0
+    container_name: mysql-kb-admin
+    ports:
+      - "3306:3306"
+    environment:
+      - MYSQL_ROOT_PASSWORD=rootsecret
+      - MYSQL_DATABASE=laravel
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - laravel-microservices
+    restart: unless-stopped
+    profiles:
+      - standalone
+
+networks:
+  laravel-microservices:
+    external: true
+    name: laravel-microservices
+
+volumes:
+  redis_data:
+  mysql_data:
