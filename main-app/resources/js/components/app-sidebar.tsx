@@ -10,10 +10,12 @@ import {
     SidebarMenu,
     SidebarMenuButton,
     SidebarMenuItem,
+    SidebarGroup,
+    SidebarGroupLabel,
 } from '@/components/ui/sidebar';
 import { type NavItem, type SharedData } from '@/types';
 import { Link, usePage } from '@inertiajs/react';
-import { BookOpen, Folder, Home, LayoutGrid } from 'lucide-react';
+import { BookOpen, Folder, Home, LayoutGrid, BrainCircuit, Database } from 'lucide-react';
 import AppLogo from './app-logo';
 
 const footerNavItems: NavItem[] = [
@@ -34,24 +36,24 @@ export function AppSidebar() {
 
     const mainNavItems: NavItem[] = currentProject
         ? [
-              {
-                  title: 'Home',
-                  href: `/projects/${currentProject.slug}/home`,
-                  icon: Home,
-              },
-              {
-                  title: 'Dashboard',
-                  href: `/projects/${currentProject.slug}/dashboard`,
-                  icon: LayoutGrid,
-              },
-          ]
+            {
+                title: 'Home',
+                href: `/projects/${currentProject.slug}/home`,
+                icon: Home,
+            },
+            {
+                title: 'Dashboard',
+                href: `/projects/${currentProject.slug}/dashboard`,
+                icon: LayoutGrid,
+            },
+        ]
         : [
-              {
-                  title: 'Projects',
-                  href: '/projects',
-                  icon: Folder,
-              },
-          ];
+            {
+                title: 'Projects',
+                href: '/projects',
+                icon: Folder,
+            },
+        ];
 
     return (
         <Sidebar collapsible="icon" variant="inset">
@@ -70,7 +72,30 @@ export function AppSidebar() {
 
             <SidebarContent>
                 <NavMain items={mainNavItems} />
+
+                <SidebarGroup className="px-2 py-0">
+                    <SidebarGroupLabel>Admin</SidebarGroupLabel>
+                    <SidebarMenu>
+                        <SidebarMenuItem>
+                            <SidebarMenuButton asChild isActive={usePage().url.startsWith('/admin/learned-knowledge')}>
+                                <Link href={route('admin.learned-knowledge.index')}>
+                                    <BrainCircuit />
+                                    <span>Review Knowledge</span>
+                                </Link>
+                            </SidebarMenuButton>
+                        </SidebarMenuItem>
+                        <SidebarMenuItem>
+                            <SidebarMenuButton asChild isActive={usePage().url.startsWith('/admin/knowledge-bases')}>
+                                <Link href={route('admin.knowledge.index')}>
+                                    <Database />
+                                    <span>Knowledge Bases</span>
+                                </Link>
+                            </SidebarMenuButton>
+                        </SidebarMenuItem>
+                    </SidebarMenu>
+                </SidebarGroup>
             </SidebarContent>
+
 
             <SidebarFooter>
                 <NavFooter items={footerNavItems} className="mt-auto" />

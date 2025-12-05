@@ -96,6 +96,9 @@ class SolutionController extends Controller
             'status' => 'completed',
         ]);
 
+        // Dispatch job to capture learned knowledge
+        \App\Jobs\CaptureLearnedKnowledge::dispatch($solution);
+
         return redirect()->back()->with('success', 'Solution approved successfully.');
     }
 
@@ -191,4 +194,35 @@ class SolutionController extends Controller
 
         return response()->json($progress);
     }
+
+    /**
+     * Manually capture learned knowledge from a solution.
+     */
+    public function capture(Project $project, Solution $solution, Request $request)
+    {
+        $this->authorize('update', $solution);
+        
+        $type = $request->input('type', 'all');
+
+        if ($type === 'technical' && !$solution->technical_solution) {
+            return redirect()->back()->with('error', 'Cannot capture technical knowledge: Solution is missing.');
+        }
+        
+        if ($type === 'requirements' && !$solution->requirements) {
+            return redirect()->back()->with('error', 'Cannot capture requirements: Requirements are missing.');
+        }
+
+        // Dispatch job to capture learned knowledge
+        \App\Jobs\CaptureLearnedKnowledge::dispatch($solution, $type);
+
+        $msg = match($type) {
+            'requirements' => 'Requirements capture triggered successfully.',
+            'technical' => 'Technical solution capture triggered successfully.',
+            default => 'Learned knowledge capture triggered successfully.'
+        };
+
+        return redirect()->back()->with('success', $msg);
+    }
+
 }
+

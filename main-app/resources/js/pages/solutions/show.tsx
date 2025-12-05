@@ -376,21 +376,40 @@ export default function SolutionShow({ solution: initialSolution, project }: Sol
                                         Gathered requirements for this solution
                                     </CardDescription>
                                 </div>
-                                {!hasSolution && !isGenerating && (
-                                    <Button onClick={handlePublish} size="lg" disabled={isGenerating}>
-                                        {isGenerating ? (
-                                            <>
-                                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                                Generating...
-                                            </>
-                                        ) : (
-                                            <>
-                                                <Sparkles className="mr-2 h-4 w-4" />
-                                                Publish Technical Solution
-                                            </>
-                                        )}
+                                <div className="flex gap-2">
+                                    <Button
+                                        onClick={() => {
+                                            if (confirm('Capture requirements as learned knowledge?')) {
+                                                router.post(`/projects/${project?.slug || 'unknown'}/solutions/${solution.id}/capture`, {
+                                                    type: 'requirements'
+                                                }, {
+                                                    preserveScroll: true,
+                                                });
+                                            }
+                                        }}
+                                        variant="outline"
+                                        size="sm"
+                                        title="Capture Requirements"
+                                    >
+                                        <Lightbulb className="mr-2 h-4 w-4" />
+                                        Capture
                                     </Button>
-                                )}
+                                    {!hasSolution && !isGenerating && (
+                                        <Button onClick={handlePublish} size="lg" disabled={isGenerating}>
+                                            {isGenerating ? (
+                                                <>
+                                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                                    Generating...
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <Sparkles className="mr-2 h-4 w-4" />
+                                                    Publish Technical Solution
+                                                </>
+                                            )}
+                                        </Button>
+                                    )}
+                                </div>
                             </div>
                         </CardHeader>
                         <CardContent>
@@ -420,20 +439,41 @@ export default function SolutionShow({ solution: initialSolution, project }: Sol
                                         Comprehensive A-Z implementation guide
                                     </CardDescription>
                                 </div>
-                                <Button onClick={handleRepublish} variant="outline" disabled={isGenerating}>
-                                    {isGenerating ? (
-                                        <>
-                                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                            Regenerating...
-                                        </>
-                                    ) : (
-                                        <>
-                                            <RefreshCw className="mr-2 h-4 w-4" />
-                                            Republish Solution
-                                        </>
-                                    )}
-                                </Button>
+                                <div className="flex gap-2">
+                                    <Button
+                                        onClick={() => {
+                                            if (confirm('Capture technical solution as learned knowledge?')) {
+                                                router.post(`/projects/${project?.slug || 'unknown'}/solutions/${solution.id}/capture`, {
+                                                    type: 'technical'
+                                                }, {
+                                                    preserveScroll: true,
+                                                });
+                                            }
+                                        }}
+                                        variant="outline"
+                                        disabled={isGenerating}
+                                        title="Capture Technical Solution"
+                                    >
+                                        <Lightbulb className="mr-2 h-4 w-4" />
+                                        Capture Solution
+                                    </Button>
+                                    <Button onClick={handleRepublish} variant="outline" disabled={isGenerating}>
+
+                                        {isGenerating ? (
+                                            <>
+                                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                                Regenerating...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <RefreshCw className="mr-2 h-4 w-4" />
+                                                Republish Solution
+                                            </>
+                                        )}
+                                    </Button>
+                                </div>
                             </div>
+
                         </CardHeader>
                         <CardContent>
                             <div className="prose prose-sm dark:prose-invert max-w-none">

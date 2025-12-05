@@ -20,6 +20,17 @@ Route::middleware(['auth'])->group(function () {
     Route::get('projects/create', [ProjectController::class, 'create'])->name('projects.create');
     Route::post('projects', [ProjectController::class, 'store'])->name('projects.store');
 
+    // Admin - Learned Knowledge
+    Route::get('admin/learned-knowledge', [\App\Http\Controllers\LearnedKnowledgeController::class, 'index'])->name('admin.learned-knowledge.index');
+    Route::post('admin/learned-knowledge/{id}/review', [\App\Http\Controllers\LearnedKnowledgeController::class, 'review'])->name('admin.learned-knowledge.review');
+
+    // Admin - Knowledge Base Management
+    Route::get('admin/knowledge-bases', [\App\Http\Controllers\KnowledgeBaseController::class, 'index'])->name('admin.knowledge.index');
+    Route::get('admin/knowledge-bases/{id}', [\App\Http\Controllers\KnowledgeBaseController::class, 'show'])->name('admin.knowledge.show');
+    Route::post('admin/knowledge-bases/{id}/upload', [\App\Http\Controllers\KnowledgeBaseController::class, 'upload'])->name('admin.knowledge.upload');
+    Route::delete('admin/knowledge-bases/{id}/documents/{docId}', [\App\Http\Controllers\KnowledgeBaseController::class, 'destroyDocument'])->name('admin.knowledge.document.destroy');
+    Route::post('admin/knowledge-bases/{id}/vectorize', [\App\Http\Controllers\KnowledgeBaseController::class, 'vectorize'])->name('admin.knowledge.vectorize');
+
     // Project-scoped routes
     Route::prefix('projects/{project}')
         ->middleware(['project'])
@@ -47,7 +58,9 @@ Route::middleware(['auth'])->group(function () {
             Route::post('solutions/{solution}/approve-solution', [SolutionController::class, 'approveSolution'])->name('solutions.approve-solution');
             Route::post('solutions/{solution}/publish', [SolutionController::class, 'publish'])->name('solutions.publish');
             Route::post('solutions/{solution}/republish', [SolutionController::class, 'republish'])->name('solutions.republish');
+            Route::post('solutions/{solution}/capture', [SolutionController::class, 'capture'])->name('solutions.capture'); // Manual capture
             Route::get('solutions/{solution}/progress', [SolutionController::class, 'progress'])->name('solutions.progress');
+
 
             // Chat file upload
             Route::post('chat/upload', [\App\Http\Controllers\ChatFileController::class, 'upload'])->name('chat.file.upload');
