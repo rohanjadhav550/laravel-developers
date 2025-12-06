@@ -228,18 +228,31 @@ class DocumentService:
     @staticmethod
     def get_pending_documents(kb_id: int) -> List[DocumentResponse]:
         """
-        Get all pending documents for a KB
+        Get all pending and failed documents for a KB
+        (Documents that need to be vectorized or re-vectorized)
 
         Args:
             kb_id: KB ID
 
         Returns:
-            List of pending documents
+            List of documents needing vectorization
         """
-        return DocumentService.list_documents(
-            kb_id=kb_id,
-            status=DocumentStatus.PENDING.value
-        )
+        # Get both pending AND failed documents
+        # Failed documents should be retried when "Re-Vectorize" is clicked
+        from app.database import execute_query
+        
+        query = """
+            SELECT * FROM kb_documents
+            WHERE kb_id = %s AND (status = 'pending' OR status = 'failed')
+            ORDER BY created_at DESC
+        """
+        
+        results = execute_query(query, (kb_id,), fetch_all=True)
+        
+        if not results:
+            return []
+        
+        return [DocumentService._row_to_response(row) for row in results]
 
     @staticmethod
     def count_documents(kb_id: int, status: Optional[str] = None) -> int:

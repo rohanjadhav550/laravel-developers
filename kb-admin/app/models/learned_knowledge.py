@@ -38,7 +38,7 @@ class LearnedKnowledgeUpdate(BaseModel):
 
 class LearnedKnowledgeReview(BaseModel):
     status: ReviewStatus  # approved or rejected
-    reviewed_by: int  # User ID who reviewed
+    reviewed_by: str  # User Name or ID who reviewed
 
 
 class LearnedKnowledgeResponse(BaseModel):
@@ -52,7 +52,7 @@ class LearnedKnowledgeResponse(BaseModel):
     context: Optional[Dict[str, Any]]
     confidence_score: float
     status: ReviewStatus
-    reviewed_by: Optional[int]
+    reviewed_by: Optional[str]
     reviewed_at: Optional[datetime]
     created_at: datetime
     updated_at: datetime

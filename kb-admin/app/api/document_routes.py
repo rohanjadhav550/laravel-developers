@@ -1,7 +1,7 @@
 """
 Document API Routes
 """
-from fastapi import APIRouter, HTTPException, UploadFile, File, Form, status
+from fastapi import APIRouter, HTTPException, UploadFile, File, Form, status, Body
 from app.services.kb_service import KBService
 from app.services.document_service import DocumentService
 from app.services.vectorization_service import VectorizationService
@@ -202,12 +202,15 @@ async def delete_document(kb_id: int, doc_id: int):
 
 
 @router.post("/{kb_id}/vectorize", response_model=VectorizationResponse)
-async def vectorize_documents(kb_id: int, request: Optional[VectorizationRequest] = None):
+async def vectorize_documents(
+    kb_id: int,
+    request: Optional[VectorizationRequest] = Body(None)
+):
     """
     Trigger vectorization for documents
 
     - **kb_id**: Knowledge Base ID
-    - **document_ids**: Specific document IDs (optional, defaults to all pending documents)
+    - **document_ids**: Specific document IDs (optional, defaults to all pending/failed documents)
 
     This will:
     1. Chunk documents into smaller pieces

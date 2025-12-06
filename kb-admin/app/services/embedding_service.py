@@ -33,11 +33,34 @@ class EmbeddingService:
         self.embeddings = self._initialize_embeddings()
 
     def _get_default_api_key(self) -> Optional[str]:
-        """Get default API key from settings"""
-        if self.provider == "openai":
+        """
+        Get default API key from settings or Laravel API
+        First tries environment variable, then fetches from Laravel app
+        """
+        # Try environment variable first (for backwards compatibility)
+        if self.provider == "openai" and settings.OPENAI_API_KEY:
             return settings.OPENAI_API_KEY
-        elif self.provider == "anthropic":
+        elif self.provider == "anthropic" and settings.ANTHROPIC_API_KEY:
             return settings.ANTHROPIC_API_KEY
+        
+        # Fetch from Laravel app's AI settings
+        try:
+            import requests
+            laravel_url = settings.LARAVEL_API_URL
+            response = requests.get(f"{laravel_url}/api/internal/api-keys/{self.provider}", timeout=5)
+            
+            if response.status_code == 200:
+                data = response.json()
+                if data.get('has_key'):
+                    logger.info(f"Retrieved {self.provider} API key from Laravel app")
+                    return data.get('api_key')
+            elif response.status_code == 404:
+                logger.warning(f"No {self.provider} API key found in Laravel app")
+            else:
+                logger.error(f"Failed to fetch API key from Laravel: {response.status_code}")
+        except Exception as e:
+            logger.error(f"Error fetching API key from Laravel: {e}")
+        
         return None
 
     def _get_default_model(self) -> str:

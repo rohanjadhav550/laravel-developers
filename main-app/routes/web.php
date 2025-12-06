@@ -14,6 +14,12 @@ Route::get('/', function () {
     ]);
 })->name('home');
 
+// API endpoints for microservices (no auth required - internal use only)
+Route::prefix('api/internal')->group(function () {
+    Route::get('api-keys/{provider}', [\App\Http\Controllers\ApiKeyController::class, 'getApiKey'])->name('api.keys.get');
+    Route::get('api-keys/{provider}/check', [\App\Http\Controllers\ApiKeyController::class, 'checkApiKey'])->name('api.keys.check');
+});
+
 Route::middleware(['auth'])->group(function () {
     // Projects management
     Route::get('projects', [ProjectController::class, 'index'])->name('projects.index');

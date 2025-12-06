@@ -75,8 +75,17 @@ export default function KnowledgeShow({ kb, documents, stats }: PageProps) {
 
     const handleVectorize = () => {
         router.post(`/admin/knowledge-bases/${kb.id}/vectorize`, {}, {
-            onSuccess: () => toast.success('Vectorization triggered'),
-            onError: () => toast.error('Failed to trigger vectorization'),
+            preserveScroll: true,
+            onSuccess: (page) => {
+                toast.success('Vectorization completed successfully!');
+                // Reload the page to show updated document statuses
+                router.reload({ only: ['documents', 'kb', 'stats'] });
+            },
+            onError: (errors) => {
+                console.error('Vectorization error:', errors);
+                const errorMessage = typeof errors === 'object' ? JSON.stringify(errors) : errors;
+                toast.error(`Vectorization failed: ${errorMessage}`);
+            },
         });
     };
 

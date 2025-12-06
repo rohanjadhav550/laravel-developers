@@ -111,12 +111,23 @@ class KnowledgeBaseController extends Controller
      */
     public function vectorize(int $id)
     {
-         $response = Http::timeout(60)->post("{$this->kbAdminUrl}/api/kb/{$id}/vectorize");
+         // Send proper JSON request with explicit headers
+         $response = Http::timeout(60)
+             ->withHeaders(['Content-Type' => 'application/json', 'Accept' => 'application/json'])
+             ->post("{$this->kbAdminUrl}/api/kb/{$id}/vectorize", [
+                 // Empty body is ok, but must be valid JSON
+             ]);
 
          if ($response->successful()) {
              return redirect()->back()->with('success', 'Vectorization triggered successfully.');
          }
 
-         return redirect()->back()->with('error', 'Failed to trigger vectorization.');
+         // Log the error for debugging
+         \Log::error("Vectorization failed for KB {$id}", [
+             'status' => $response->status(),
+             'body' => $response->body()
+         ]);
+
+         return redirect()->back()->with('error', 'Failed to trigger vectorization: ' . $response->body());
     }
 }

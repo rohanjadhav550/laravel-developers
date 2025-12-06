@@ -126,6 +126,28 @@ class KBService:
         return KBService._row_to_response(result)
 
     @staticmethod
+    def get_active_kb_by_agent(agent_type: str) -> KnowledgeBaseResponse:
+        """
+        Get active Knowledge Base for an agent type (raises error if not found or not active)
+
+        Args:
+            agent_type: Agent type (requirement_agent, developer_agent, generic)
+
+        Returns:
+            Active KB data
+
+        Raises:
+            ValueError: If no active KB found for the agent type
+        """
+        query = "SELECT * FROM knowledge_bases WHERE agent_type = %s AND status = 'active' ORDER BY created_at DESC LIMIT 1"
+        result = execute_query(query, (agent_type,), fetch_one=True)
+
+        if not result:
+            raise ValueError(f"No active Knowledge Base found for agent type: {agent_type}")
+
+        return KBService._row_to_response(result)
+
+    @staticmethod
     def list_kbs(
         agent_type: Optional[str] = None,
         status: Optional[str] = None,

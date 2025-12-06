@@ -190,10 +190,14 @@ class LearnedKnowledgeService:
             title = f"Context Pattern: {knowledge.question[:50] if knowledge.question else 'Pattern'}"
 
         # Create document in KB
-        doc = DocumentService.create_document(
+        from app.models.document import DocumentCreate, SourceType
+        
+        doc_data = DocumentCreate(
             kb_id=kb.id,
             title=title,
             content=content,
+            source_type=SourceType.LEARNED,
+            source_reference=f"learned_knowledge_{knowledge_id}",
             metadata={
                 "source": "learned_knowledge",
                 "learned_id": knowledge_id,
@@ -201,6 +205,8 @@ class LearnedKnowledgeService:
                 "thread_id": knowledge.source_thread_id
             }
         )
+        
+        doc = DocumentService.create_document(doc_data)
 
         # Vectorize the document
         VectorizationService.vectorize_document(doc.id)
