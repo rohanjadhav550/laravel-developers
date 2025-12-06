@@ -2,7 +2,8 @@ import AppLayout from '@/layouts/app-layout';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Head, useForm } from '@inertiajs/react';
+import { Head, router } from '@inertiajs/react';
+import { useState } from 'react';
 import { Check, X } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -21,12 +22,13 @@ interface PageProps {
 }
 
 export default function LearnedKnowledgeIndex({ pendingKnowledge }: PageProps) {
-    const { post, processing } = useForm();
+    const [processing, setProcessing] = useState(false);
 
     const handleReview = (id: number, status: 'approved' | 'rejected') => {
-        post(route('admin.learned-knowledge.review', id), {
-            data: { status },
+        setProcessing(true);
+        router.post(`/admin/learned-knowledge/${id}/review`, { status }, {
             preserveScroll: true,
+            onFinish: () => setProcessing(false),
             onSuccess: () => {
                 toast.success(`Knowledge ${status} successfully`);
             },

@@ -35,7 +35,7 @@ export default function KnowledgeIndex({ knowledgeBases, pendingReviewsCount }: 
                     </div>
                     {pendingReviewsCount > 0 && (
                         <Button asChild variant="outline" className="gap-2 border-yellow-500/50 bg-yellow-500/10 text-yellow-700 hover:bg-yellow-500/20 dark:text-yellow-400">
-                            <Link href={route('admin.learned-knowledge.index')}>
+                            <Link href="/admin/learned-knowledge">
                                 <BrainCircuit className="h-4 w-4" />
                                 {pendingReviewsCount} Pending Reviews
                             </Link>
@@ -45,7 +45,7 @@ export default function KnowledgeIndex({ knowledgeBases, pendingReviewsCount }: 
 
                 <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                     {knowledgeBases.map((kb) => (
-                        <Link key={kb.id} href={route('admin.knowledge.show', kb.id)}>
+                        <Link key={kb.id} href={`/admin/knowledge-bases/${kb.id}`}>
                             <Card className="h-full transition-all hover:border-primary/50 hover:shadow-md cursor-pointer group">
                                 <CardHeader className="pb-3">
                                     <div className="flex justify-between items-start">

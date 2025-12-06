@@ -52,7 +52,7 @@ export default function KnowledgeShow({ kb, documents, stats }: PageProps) {
             return;
         }
 
-        post(route('admin.knowledge.upload', kb.id), {
+        post(`/admin/knowledge-bases/${kb.id}/upload`, {
             onSuccess: () => {
                 toast.success('Document uploaded successfully');
                 reset();
@@ -66,7 +66,7 @@ export default function KnowledgeShow({ kb, documents, stats }: PageProps) {
 
     const handleDelete = (docId: number) => {
         if (confirm('Are you sure you want to delete this document?')) {
-            router.delete(route('admin.knowledge.document.destroy', { id: kb.id, docId }), {
+            router.delete(`/admin/knowledge-bases/${kb.id}/documents/${docId}`, {
                 onSuccess: () => toast.success('Document deleted'),
                 onError: () => toast.error('Failed to delete document'),
             });
@@ -74,7 +74,7 @@ export default function KnowledgeShow({ kb, documents, stats }: PageProps) {
     };
 
     const handleVectorize = () => {
-        router.post(route('admin.knowledge.vectorize', kb.id), {}, {
+        router.post(`/admin/knowledge-bases/${kb.id}/vectorize`, {}, {
             onSuccess: () => toast.success('Vectorization triggered'),
             onError: () => toast.error('Failed to trigger vectorization'),
         });
@@ -82,7 +82,7 @@ export default function KnowledgeShow({ kb, documents, stats }: PageProps) {
 
     return (
         <AppLayout breadcrumbs={[
-            { title: 'Knowledge Bases', href: route('admin.knowledge.index') },
+            { title: 'Knowledge Bases', href: '/admin/knowledge-bases' },
             { title: kb.name }
         ]}>
             <Head title={`${kb.name} - Knowledge Base`} />
@@ -90,7 +90,7 @@ export default function KnowledgeShow({ kb, documents, stats }: PageProps) {
             <div className="flex h-full flex-1 flex-col gap-6 p-6">
                 <div className="mb-2">
                     <Button variant="ghost" size="sm" asChild>
-                        <Link href={route('admin.knowledge.index')}>
+                        <Link href="/admin/knowledge-bases">
                             <ArrowLeft className="mr-2 h-4 w-4" /> Back
                         </Link>
                     </Button>

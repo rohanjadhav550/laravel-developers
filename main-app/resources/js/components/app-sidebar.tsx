@@ -78,7 +78,7 @@ export function AppSidebar() {
                     <SidebarMenu>
                         <SidebarMenuItem>
                             <SidebarMenuButton asChild isActive={usePage().url.startsWith('/admin/learned-knowledge')}>
-                                <Link href={route('admin.learned-knowledge.index')}>
+                                <Link href="/admin/learned-knowledge">
                                     <BrainCircuit />
                                     <span>Review Knowledge</span>
                                 </Link>
@@ -86,7 +86,7 @@ export function AppSidebar() {
                         </SidebarMenuItem>
                         <SidebarMenuItem>
                             <SidebarMenuButton asChild isActive={usePage().url.startsWith('/admin/knowledge-bases')}>
-                                <Link href={route('admin.knowledge.index')}>
+                                <Link href="/admin/knowledge-bases">
                                     <Database />
                                     <span>Knowledge Bases</span>
                                 </Link>
